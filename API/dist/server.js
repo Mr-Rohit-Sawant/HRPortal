@@ -42,19 +42,34 @@ const app_1 = __importStar(require("./app"));
 const logger_1 = require("./utils/logger");
 const searchService_1 = require("./services/searchService");
 const PORT = parseInt(process.env.PORT || '5001', 10);
+let dbError = null;
+app_1.default.get('/api/debug', (_req, res) => {
+    res.json({
+        status: dbError ? 'error' : 'ok',
+        dbError,
+        env: {
+            NODE_ENV: process.env.NODE_ENV,
+            PORT: process.env.PORT,
+            DB_SET: !!process.env.DATABASE_URL,
+            DB_URL_PREVIEW: process.env.DATABASE_URL?.replace(/:([^@]+)@/, ':****@'),
+        },
+    });
+});
 async function startServer() {
+    // Always start listening — even if DB fails we can see debug info
+    const server = app_1.default.listen(PORT, () => {
+        logger_1.logger.info(`🚀 HR Recruitment API running on port ${PORT}`);
+        logger_1.logger.info(`📚 Environment: ${process.env.NODE_ENV}`);
+    });
     try {
         await app_1.prisma.$connect();
         logger_1.logger.info('✅ Database connected');
         await (0, searchService_1.initElasticsearch)();
-        app_1.default.listen(PORT, () => {
-            logger_1.logger.info(`🚀 HR Recruitment API running on http://localhost:${PORT}`);
-            logger_1.logger.info(`📚 Environment: ${process.env.NODE_ENV}`);
-        });
     }
     catch (error) {
-        logger_1.logger.error('Failed to start server:', error);
-        process.exit(1);
+        dbError = error?.message || String(error);
+        logger_1.logger.error('❌ Database connection failed:', error);
+        // Don't exit — keep server alive so /api/debug shows the error
     }
 }
 process.on('SIGTERM', async () => {
