@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npx prisma *)",
+      "Bash(npx tsc *)",
+      "Bash(sed -i '' \"s/, mode: 'insensitive'//g\" \"/Users/rohitsawant/Desktop/Project/DSRP New Project/API/src/controllers/clientController.ts\" \"/Users/rohitsawant/Desktop/Project/DSRP New Project/API/src/controllers/employeeController.ts\" \"/Users/rohitsawant/Desktop/Project/DSRP New Project/API/src/controllers/jobController.ts\" \"/Users/rohitsawant/Desktop/Project/DSRP New Project/API/src/controllers/invoiceController.ts\")",
+      "Bash(grep -rn \"type=\\\\\"tel\\\\\"\\\\|register\\('phone'\\)\\\\|register\\(\\\\\"phone\\\\\"\\)\\\\|register\\('alternatePhone'\\)\\\\|register\\(\\\\\"alternatePhone\\\\\"\\)\\\\|{...register\\\\\\('phone'\\\\\\)}\\\\|{...register\\\\\\('alternatePhone'\\\\\\)}\" \"/Users/rohitsawant/Desktop/Project/DSRP New Project/Main/src/views\" --include=\"*.tsx\")",
+      "Bash(node -e ' *)",
+      "Bash(brew services *)",
+      "Bash(mysql --version)"
+    ],
+    "additionalDirectories": [
+      "/Users/rohitsawant/Desktop/Project/DSRP New Project/API/src/controllers"
+    ]
+  }
+}
