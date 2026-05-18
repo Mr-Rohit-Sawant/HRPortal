@@ -25,66 +25,68 @@ import FontManagementView from '../views/settings/FontManagementView';
 import AuditLogsView from '../views/settings/AuditLogsView';
 import LanguageManagementView from '../views/settings/LanguageManagementView';
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+// Shows login at "/" when not authenticated, redirects to dashboard when authenticated
+const RootRoute = () => {
   const { isAuthenticated } = useAuthStore();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginView />;
 };
 
-const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+// Wraps protected pages — redirects to "/" (login) if not authenticated
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuthStore();
-  return !isAuthenticated ? <>{children}</> : <Navigate to="/dashboard" replace />;
+  return isAuthenticated ? <>{children}</> : <Navigate to="/" replace />;
 };
 
 export default function AppRouter() {
   return (
     <Routes>
-      {/* Public Routes */}
-      <Route path="/login" element={<PublicRoute><LoginView /></PublicRoute>} />
-      <Route path="/forgot-password" element={<PublicRoute><ForgotPasswordView /></PublicRoute>} />
-      <Route path="/reset-password" element={<PublicRoute><ResetPasswordView /></PublicRoute>} />
+      {/* Root — shows login page without redirecting to /login */}
+      <Route path="/" element={<RootRoute />} />
+      <Route path="/login" element={<Navigate to="/" replace />} />
+      <Route path="/forgot-password" element={<ForgotPasswordView />} />
+      <Route path="/reset-password" element={<ResetPasswordView />} />
 
-      {/* Protected Routes */}
-      <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardView />} />
+      {/* Protected layout — pathless route keeps all child URLs unchanged */}
+      <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+        <Route path="/dashboard" element={<DashboardView />} />
 
         {/* CV Database */}
-        <Route path="cv-database" element={<CVDatabaseView />} />
-        <Route path="cv-database/add" element={<CVAddView />} />
-        <Route path="cv-database/bulk-import" element={<CVBulkImportView />} />
-        <Route path="cv-database/:id" element={<CVDetailView />} />
-        <Route path="cv-database/:id/edit" element={<CVAddView />} />
+        <Route path="/cv-database" element={<CVDatabaseView />} />
+        <Route path="/cv-database/add" element={<CVAddView />} />
+        <Route path="/cv-database/bulk-import" element={<CVBulkImportView />} />
+        <Route path="/cv-database/:id" element={<CVDetailView />} />
+        <Route path="/cv-database/:id/edit" element={<CVAddView />} />
 
         {/* Job Openings */}
-        <Route path="job-openings" element={<JobOpeningsView />} />
-        <Route path="job-openings/new" element={<JobOpeningFormView />} />
-        <Route path="job-openings/:id" element={<JobOpeningDetailView />} />
-        <Route path="job-openings/:id/edit" element={<JobOpeningFormView />} />
+        <Route path="/job-openings" element={<JobOpeningsView />} />
+        <Route path="/job-openings/new" element={<JobOpeningFormView />} />
+        <Route path="/job-openings/:id" element={<JobOpeningDetailView />} />
+        <Route path="/job-openings/:id/edit" element={<JobOpeningFormView />} />
 
         {/* Employees */}
-        <Route path="employees" element={<EmployeeListView />} />
-        <Route path="employees/add" element={<AddEmployeeView />} />
-        <Route path="employees/:id/edit" element={<AddEmployeeView />} />
+        <Route path="/employees" element={<EmployeeListView />} />
+        <Route path="/employees/add" element={<AddEmployeeView />} />
+        <Route path="/employees/:id/edit" element={<AddEmployeeView />} />
 
         {/* Clients */}
-        <Route path="clients" element={<ClientListView />} />
-        <Route path="clients/add" element={<AddClientView />} />
-        <Route path="clients/:id/edit" element={<AddClientView />} />
+        <Route path="/clients" element={<ClientListView />} />
+        <Route path="/clients/add" element={<AddClientView />} />
+        <Route path="/clients/:id/edit" element={<AddClientView />} />
 
         {/* Invoices */}
-        <Route path="invoices" element={<InvoiceListView />} />
-        <Route path="invoices/generate" element={<GenerateInvoiceView />} />
+        <Route path="/invoices" element={<InvoiceListView />} />
+        <Route path="/invoices/generate" element={<GenerateInvoiceView />} />
 
         {/* Settings */}
-        <Route path="profile" element={<ProfileView />} />
-        <Route path="settings/theme" element={<ThemeManagementView />} />
-        <Route path="settings/roles" element={<RoleManagementView />} />
-        <Route path="settings/fonts" element={<FontManagementView />} />
-        <Route path="settings/audit" element={<AuditLogsView />} />
-        <Route path="settings/languages" element={<LanguageManagementView />} />
+        <Route path="/profile" element={<ProfileView />} />
+        <Route path="/settings/theme" element={<ThemeManagementView />} />
+        <Route path="/settings/roles" element={<RoleManagementView />} />
+        <Route path="/settings/fonts" element={<FontManagementView />} />
+        <Route path="/settings/audit" element={<AuditLogsView />} />
+        <Route path="/settings/languages" element={<LanguageManagementView />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }
