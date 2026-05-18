@@ -1,0 +1,20 @@
+import { Request, Response } from 'express';
+export declare const getAppSettings: (_req: Request, res: Response) => Promise<void>;
+export declare const updateAppSettings: (req: Request, res: Response) => Promise<void>;
+export declare const uploadLogo: (req: Request, res: Response) => Promise<void>;
+export declare const uploadFont: (req: Request, res: Response) => Promise<void>;
+export declare const getRoles: (_req: Request, res: Response) => Promise<void>;
+export declare const createRole: (req: Request, res: Response) => Promise<void>;
+export declare const updateRole: (req: Request, res: Response) => Promise<void>;
+export declare const deleteRole: (req: Request, res: Response) => Promise<void>;
+export declare const cloneRole: (req: Request, res: Response) => Promise<void>;
+export declare const getPermissions: (_req: Request, res: Response) => Promise<void>;
+export declare const getColumnDefinitions: (req: Request, res: Response) => Promise<void>;
+export declare const upsertColumnDefinition: (req: Request, res: Response) => Promise<void>;
+export declare const deleteColumnDefinition: (req: Request, res: Response) => Promise<void>;
+export declare const reorderColumns: (req: Request, res: Response) => Promise<void>;
+export declare const getAuditLogs: (req: Request, res: Response) => Promise<void>;
+export declare const getNotifications: (req: Request, res: Response) => Promise<void>;
+export declare const markNotificationRead: (req: Request, res: Response) => Promise<void>;
+export declare const markAllNotificationsRead: (req: Request, res: Response) => Promise<void>;
+//# sourceMappingURL=settingsController.d.ts.map

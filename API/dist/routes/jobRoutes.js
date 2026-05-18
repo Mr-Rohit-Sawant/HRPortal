@@ -1,0 +1,33 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const jobController_1 = require("../controllers/jobController");
+const authMiddleware_1 = require("../middleware/authMiddleware");
+const uploadMiddleware_1 = require("../middleware/uploadMiddleware");
+const router = (0, express_1.Router)();
+router.use(authMiddleware_1.authenticate);
+router.get('/', (0, authMiddleware_1.requirePermission)('jobs', 'view'), jobController_1.getJobs);
+router.get('/:id', (0, authMiddleware_1.requirePermission)('jobs', 'view'), jobController_1.getJobById);
+router.post('/', (0, authMiddleware_1.requirePermission)('jobs', 'create'), uploadMiddleware_1.uploadDocument.single('jdDocument'), jobController_1.createJob);
+router.post('/import-csv', (0, authMiddleware_1.requirePermission)('jobs', 'create'), jobController_1.importJobsCSV);
+router.put('/:id', (0, authMiddleware_1.requirePermission)('jobs', 'update'), uploadMiddleware_1.uploadDocument.single('jdDocument'), jobController_1.updateJob);
+router.delete('/:id', (0, authMiddleware_1.requirePermission)('jobs', 'delete'), jobController_1.deleteJob);
+router.patch('/:id/custom-fields', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.updateCustomFields);
+router.patch('/:id/assignees', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.toggleJobAssignee);
+router.post('/:id/close', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.closeJob);
+router.post('/:id/start-replacement', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.startReplacement);
+router.patch('/:id/psr-columns', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.updatePSRColumns);
+// Post Selection Records
+router.patch('/psr/:recordId', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.updatePostSelectionRecord);
+router.post('/psr/:recordId/offer-letter', (0, authMiddleware_1.requirePermission)('jobs', 'update'), uploadMiddleware_1.uploadDocument.single('offerLetter'), jobController_1.uploadOfferLetter);
+// Interview Rounds
+router.post('/:id/rounds', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.addRound);
+router.patch('/rounds/:roundId', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.renameRound);
+router.patch('/rounds/:roundId/columns', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.updateRoundColumns);
+router.patch('/rounds/:roundId/slots/bulk', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.bulkUpdateSlots);
+router.post('/rounds/:roundId/candidates', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.addCandidateToRound);
+router.delete('/rounds/:roundId/candidates/:candidateId', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.removeCandidateFromRound);
+router.patch('/slots/:slotId', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.updateSlot);
+router.patch('/slots/:slotId/custom-fields', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.updateSlotCustomField);
+exports.default = router;
+//# sourceMappingURL=jobRoutes.js.map

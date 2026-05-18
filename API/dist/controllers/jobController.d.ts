@@ -1,0 +1,23 @@
+import { Request, Response } from 'express';
+export declare const getJobs: (req: Request, res: Response) => Promise<void>;
+export declare const getJobById: (req: Request, res: Response) => Promise<void>;
+export declare const createJob: (req: Request, res: Response) => Promise<void>;
+export declare const updateJob: (req: Request, res: Response) => Promise<void>;
+export declare const deleteJob: (req: Request, res: Response) => Promise<void>;
+export declare const addRound: (req: Request, res: Response) => Promise<void>;
+export declare const updateSlot: (req: Request, res: Response) => Promise<void>;
+export declare const renameRound: (req: Request, res: Response) => Promise<void>;
+export declare const updateRoundColumns: (req: Request, res: Response) => Promise<void>;
+export declare const updateSlotCustomField: (req: Request, res: Response) => Promise<void>;
+export declare const bulkUpdateSlots: (req: Request, res: Response) => Promise<void>;
+export declare const toggleJobAssignee: (req: Request, res: Response) => Promise<void>;
+export declare const closeJob: (req: Request, res: Response) => Promise<void>;
+export declare const startReplacement: (req: Request, res: Response) => Promise<void>;
+export declare const updatePostSelectionRecord: (req: Request, res: Response) => Promise<void>;
+export declare const uploadOfferLetter: (req: Request, res: Response) => Promise<void>;
+export declare const updatePSRColumns: (req: Request, res: Response) => Promise<void>;
+export declare const addCandidateToRound: (req: Request, res: Response) => Promise<void>;
+export declare const removeCandidateFromRound: (req: Request, res: Response) => Promise<void>;
+export declare const importJobsCSV: (req: Request, res: Response) => Promise<void>;
+export declare const updateCustomFields: (req: Request, res: Response) => Promise<void>;
+//# sourceMappingURL=jobController.d.ts.map
