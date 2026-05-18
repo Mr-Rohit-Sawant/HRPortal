@@ -205,13 +205,14 @@ const deleteEmployee = async (req, res) => {
 exports.deleteEmployee = deleteEmployee;
 const resetEmployeePassword = async (req, res) => {
     const { id } = req.params;
+    const { newPassword: providedPassword } = req.body;
     const employee = await app_1.prisma.user.findUnique({ where: { id } });
     if (!employee)
         throw new errorMiddleware_1.AppError('Employee not found', 404);
-    const newPassword = `HR@${Math.random().toString(36).slice(-8)}`;
+    const newPassword = providedPassword || `HR@${Math.random().toString(36).slice(-8)}`;
     const passwordHash = await bcryptjs_1.default.hash(newPassword, parseInt(process.env.BCRYPT_ROUNDS || '12'));
     await app_1.prisma.user.update({ where: { id }, data: { passwordHash, refreshToken: null } });
-    res.json({ success: true, message: 'Password reset', data: { newPassword } });
+    res.json({ success: true, message: 'Password reset successfully', data: { newPassword } });
 };
 exports.resetEmployeePassword = resetEmployeePassword;
 const updateCustomFields = async (req, res) => {

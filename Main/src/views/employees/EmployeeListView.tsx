@@ -5,9 +5,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Plus, Search, Edit, Trash2, ToggleLeft, ToggleRight, RefreshCw, Eye,
   PanelRight, X, Mail, Phone, MapPin, Briefcase, ExternalLink, Loader2,
-  Calendar, DollarSign, Shield,
+  Calendar, Shield, KeyRound,
 } from 'lucide-react';
 import { employeeService } from '../../services/employeeService';
+import ResetPasswordModal from '../../components/employees/ResetPasswordModal';
 import { User } from '../../types';
 import { formatDate, getStatusColor, getInitials, cn } from '../../utils/helpers';
 import Pagination from '../../components/common/Pagination';
@@ -24,6 +25,9 @@ const QUERY_KEY = ['employees'];
 
 function EmployeeQuickPanel({ id, onClose }: { id: string; onClose: () => void }) {
   const navigate = useNavigate();
+  const { user: currentUser } = useAuthStore();
+  const canResetPassword = currentUser?.isSuperAdmin || currentUser?.role?.name === 'admin';
+  const [resetPwOpen, setResetPwOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['employee', id],
@@ -154,14 +158,33 @@ function EmployeeQuickPanel({ id, onClose }: { id: string; onClose: () => void }
       </div>
 
       {data && (
-        <div className="flex items-center gap-2 px-5 py-3.5 border-t border-slate-200 dark:border-slate-700 flex-shrink-0 bg-white dark:bg-slate-900">
-          <button onClick={() => navigate(`/employees/${id}/edit`)} className="btn-secondary flex-1 justify-center text-xs py-1.5">
-            <Edit size={13} /> Edit
-          </button>
-          <button onClick={() => navigate(`/employees/${id}`)} className="btn-primary flex-1 justify-center text-xs py-1.5">
-            <ExternalLink size={13} /> Full Profile
-          </button>
+        <div className="flex flex-col gap-2 px-5 py-3.5 border-t border-slate-200 dark:border-slate-700 flex-shrink-0 bg-white dark:bg-slate-900">
+          <div className="flex items-center gap-2">
+            <button onClick={() => navigate(`/employees/${id}/edit`)} className="btn-secondary flex-1 justify-center text-xs py-1.5">
+              <Edit size={13} /> Edit
+            </button>
+            <button onClick={() => navigate(`/employees/${id}/edit`)} className="btn-primary flex-1 justify-center text-xs py-1.5">
+              <ExternalLink size={13} /> Full Profile
+            </button>
+          </div>
+          {canResetPassword && (
+            <button
+              onClick={() => setResetPwOpen(true)}
+              className="w-full flex items-center justify-center gap-1.5 text-xs py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+            >
+              <KeyRound size={13} /> Reset Password
+            </button>
+          )}
         </div>
+      )}
+
+      {data && (
+        <ResetPasswordModal
+          isOpen={resetPwOpen}
+          onClose={() => setResetPwOpen(false)}
+          employeeId={id}
+          employeeName={`${data.firstName} ${data.lastName}`}
+        />
       )}
     </div>
   );

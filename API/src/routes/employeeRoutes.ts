@@ -3,7 +3,7 @@ import {
   getEmployees, getEmployeeById, createEmployee, updateEmployee,
   toggleEmployeeStatus, deleteEmployee, resetEmployeePassword, updateProfile, updateCustomFields,
 } from '../controllers/employeeController';
-import { authenticate, requirePermission, requireSuperAdmin } from '../middleware/authMiddleware';
+import { authenticate, requirePermission, requireSuperAdmin, requireAdminOrSuperAdmin } from '../middleware/authMiddleware';
 import { uploadProfilePhoto } from '../middleware/uploadMiddleware';
 
 const router = Router();
@@ -16,7 +16,7 @@ router.post('/', requirePermission('employees', 'create'), uploadProfilePhoto.si
 router.put('/me', uploadProfilePhoto.single('profilePhoto'), updateProfile);
 router.put('/:id', requirePermission('employees', 'update'), uploadProfilePhoto.single('profilePhoto'), updateEmployee);
 router.patch('/:id/status', requirePermission('employees', 'toggle_status'), toggleEmployeeStatus);
-router.patch('/:id/reset-password', requireSuperAdmin, resetEmployeePassword);
+router.patch('/:id/reset-password', requireAdminOrSuperAdmin, resetEmployeePassword);
 router.patch('/:id/custom-fields', requirePermission('employees', 'update'), updateCustomFields);
 router.delete('/:id', requirePermission('employees', 'delete'), deleteEmployee);
 

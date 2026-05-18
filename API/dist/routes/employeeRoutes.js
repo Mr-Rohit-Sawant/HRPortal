@@ -12,7 +12,7 @@ router.post('/', (0, authMiddleware_1.requirePermission)('employees', 'create'),
 router.put('/me', uploadMiddleware_1.uploadProfilePhoto.single('profilePhoto'), employeeController_1.updateProfile);
 router.put('/:id', (0, authMiddleware_1.requirePermission)('employees', 'update'), uploadMiddleware_1.uploadProfilePhoto.single('profilePhoto'), employeeController_1.updateEmployee);
 router.patch('/:id/status', (0, authMiddleware_1.requirePermission)('employees', 'toggle_status'), employeeController_1.toggleEmployeeStatus);
-router.patch('/:id/reset-password', authMiddleware_1.requireSuperAdmin, employeeController_1.resetEmployeePassword);
+router.patch('/:id/reset-password', authMiddleware_1.requireAdminOrSuperAdmin, employeeController_1.resetEmployeePassword);
 router.patch('/:id/custom-fields', (0, authMiddleware_1.requirePermission)('employees', 'update'), employeeController_1.updateCustomFields);
 router.delete('/:id', (0, authMiddleware_1.requirePermission)('employees', 'delete'), employeeController_1.deleteEmployee);
 exports.default = router;

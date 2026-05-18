@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requireSuperAdmin = exports.requirePermission = exports.authenticate = void 0;
+exports.requireAdminOrSuperAdmin = exports.requireSuperAdmin = exports.requirePermission = exports.authenticate = void 0;
 const jwt_1 = require("../utils/jwt");
 const errorMiddleware_1 = require("./errorMiddleware");
 const app_1 = require("../app");
@@ -53,4 +53,11 @@ const requireSuperAdmin = (req, _res, next) => {
     next();
 };
 exports.requireSuperAdmin = requireSuperAdmin;
+const requireAdminOrSuperAdmin = (req, _res, next) => {
+    if (!req.user?.isSuperAdmin && req.user?.roleName !== 'admin') {
+        return next(new errorMiddleware_1.AppError('Admin access required', 403));
+    }
+    next();
+};
+exports.requireAdminOrSuperAdmin = requireAdminOrSuperAdmin;
 //# sourceMappingURL=authMiddleware.js.map

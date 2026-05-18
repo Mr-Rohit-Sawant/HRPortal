@@ -4,10 +4,12 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Save, User, Eye, EyeOff, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Save, User, Eye, EyeOff, RefreshCw, KeyRound } from 'lucide-react';
 import { cn } from '../../utils/helpers';
 import { employeeService } from '../../services/employeeService';
 import { settingsService } from '../../services/settingsService';
+import { useAuthStore } from '../../stores/authStore';
+import ResetPasswordModal from '../../components/employees/ResetPasswordModal';
 import toast from 'react-hot-toast';
 import { useDropzone } from 'react-dropzone';
 import SmartSelect, { SmartSelectOption } from '../../components/common/SmartSelect';
@@ -39,6 +41,9 @@ export default function AddEmployeeView() {
   const { id } = useParams();
   const queryClient = useQueryClient();
   const isEdit = !!id;
+  const { user: currentUser } = useAuthStore();
+  const canResetPassword = currentUser?.isSuperAdmin || currentUser?.role?.name === 'admin';
+  const [resetPwOpen, setResetPwOpen] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
   const [extraCountries, setExtraCountries] = useState<string[]>([]);
   const [extraStates, setExtraStates] = useState<string[]>([]);
@@ -404,6 +409,22 @@ export default function AddEmployeeView() {
               </div>
             )}
 
+            {isEdit && canResetPassword && (
+              <div className="card p-5">
+                <h3 className="font-semibold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
+                  <KeyRound size={15} className="text-amber-500" /> Reset Password
+                </h3>
+                <p className="text-xs text-slate-400 mb-3">Set a new password for this employee's account.</p>
+                <button
+                  type="button"
+                  onClick={() => setResetPwOpen(true)}
+                  className="w-full flex items-center justify-center gap-2 text-sm py-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+                >
+                  <KeyRound size={14} /> Reset Password
+                </button>
+              </div>
+            )}
+
             <div className="flex flex-col gap-2">
               <button type="submit" disabled={isLoading} className="btn-primary justify-center">
                 {isLoading ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Save size={16} />}
@@ -414,6 +435,15 @@ export default function AddEmployeeView() {
           </div>
         </div>
       </form>
+
+      {isEdit && existingEmployee && (
+        <ResetPasswordModal
+          isOpen={resetPwOpen}
+          onClose={() => setResetPwOpen(false)}
+          employeeId={id!}
+          employeeName={`${existingEmployee.firstName} ${existingEmployee.lastName || ''}`}
+        />
+      )}
     </div>
   );
 }

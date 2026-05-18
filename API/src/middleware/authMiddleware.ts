@@ -63,3 +63,10 @@ export const requireSuperAdmin = (req: Request, _res: Response, next: NextFuncti
   }
   next();
 };
+
+export const requireAdminOrSuperAdmin = (req: Request, _res: Response, next: NextFunction) => {
+  if (!req.user?.isSuperAdmin && req.user?.roleName !== 'admin') {
+    return next(new AppError('Admin access required', 403));
+  }
+  next();
+};

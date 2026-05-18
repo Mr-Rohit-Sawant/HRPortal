@@ -26,8 +26,8 @@ export const employeeService = {
   toggleStatus: (id: string) =>
     api.patch<ApiResponse<{ status: string }>>(`/employees/${id}/status`),
 
-  resetPassword: (id: string) =>
-    api.patch<ApiResponse<{ newPassword: string }>>(`/employees/${id}/reset-password`),
+  resetPassword: (id: string, newPassword: string) =>
+    api.patch<ApiResponse<{ newPassword: string }>>(`/employees/${id}/reset-password`, { newPassword }),
 
   deleteEmployee: (id: string) => api.delete<ApiResponse>(`/employees/${id}`),
 
