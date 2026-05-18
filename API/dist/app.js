@@ -64,6 +64,12 @@ app.use('/api/settings', settingsRoutes_1.default);
 app.get('/api/health', (_req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString(), version: process.env.APP_VERSION });
 });
+// Serve React frontend (must be after all API routes)
+const publicDir = path_1.default.join(process.cwd(), 'public');
+app.use(express_1.default.static(publicDir));
+app.get('*', (_req, res) => {
+    res.sendFile(path_1.default.join(publicDir, 'index.html'));
+});
 // Error handling
 app.use(errorMiddleware_1.notFound);
 app.use(errorMiddleware_1.errorHandler);

@@ -71,6 +71,13 @@ app.get('/api/health', (_req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString(), version: process.env.APP_VERSION });
 });
 
+// Serve React frontend (must be after all API routes)
+const publicDir = path.join(process.cwd(), 'public');
+app.use(express.static(publicDir));
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(publicDir, 'index.html'));
+});
+
 // Error handling
 app.use(notFound);
 app.use(errorHandler);
