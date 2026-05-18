@@ -12,7 +12,16 @@ const mammoth_1 = __importDefault(require("mammoth"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const logger_1 = require("../utils/logger");
-const openai = new openai_1.default({ apiKey: process.env.OPENAI_API_KEY });
+let _openai = null;
+function getOpenAI() {
+    if (!_openai) {
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error('OPENAI_API_KEY is not configured');
+        }
+        _openai = new openai_1.default({ apiKey: process.env.OPENAI_API_KEY });
+    }
+    return _openai;
+}
 const CV_PARSE_PROMPT = `You are an expert HR recruiter and CV parser. Extract all available information from the following CV text and return it as a valid JSON object.
 
 Return ONLY valid JSON with these exact fields (use null for fields you're not sure about, never guess):
@@ -72,7 +81,7 @@ async function parseCVWithAI(filePath, originalName) {
             throw new Error('Could not extract sufficient text from the CV');
         }
         const truncatedText = rawText.slice(0, 8000);
-        const response = await openai.chat.completions.create({
+        const response = await getOpenAI().chat.completions.create({
             model: 'gpt-4o',
             messages: [
                 {
