@@ -52,16 +52,20 @@ export default function Sidebar({ isOpen, collapsed, onClose }: SidebarProps) {
       labelKey: 'nav.settings',
       icon: <Settings size={18} />,
       children: [
-        { labelKey: 'settings.theme',     path: '/settings/theme',     icon: <Palette size={15} /> },
-        { labelKey: 'settings.roles',     path: '/settings/roles',     icon: <Shield size={15} /> },
-        { labelKey: 'settings.fonts',     path: '/settings/fonts',     icon: <Type size={15} /> },
-        { labelKey: 'settings.auditLogs', path: '/settings/audit',     icon: <ClipboardList size={15} /> },
-        { labelKey: 'settings.languages', path: '/settings/languages', icon: <Globe size={15} /> },
+        { labelKey: 'settings.theme',     path: '/settings/theme',     icon: <Palette size={15} />,       permission: 'settings:theme' },
+        { labelKey: 'settings.roles',     path: '/settings/roles',     icon: <Shield size={15} />,        permission: 'settings:roles' },
+        { labelKey: 'settings.fonts',     path: '/settings/fonts',     icon: <Type size={15} />,          permission: 'settings:fonts' },
+        { labelKey: 'settings.auditLogs', path: '/settings/audit',     icon: <ClipboardList size={15} />, permission: 'audit:view' },
+        { labelKey: 'settings.languages', path: '/settings/languages', icon: <Globe size={15} />,         permission: 'settings:view' },
       ],
     },
   ];
 
   const filteredItems = navItems.filter((item) => {
+    if ('children' in item && item.children) {
+      const visibleChildren = item.children.filter(c => !c.permission || canAccess(c.permission));
+      return visibleChildren.length > 0;
+    }
     if (!('permission' in item) || !item.permission) return true;
     return canAccess(item.permission as string);
   });
@@ -150,7 +154,7 @@ export default function Sidebar({ isOpen, collapsed, onClose }: SidebarProps) {
                   </button>
                   {isExpanded && expandedItem === item.labelKey && item.children && (
                     <div className="ml-6 mt-0.5 space-y-0.5 border-l border-white/10 pl-3">
-                      {item.children.map((child) => (
+                      {item.children.filter(c => !c.permission || canAccess(c.permission)).map((child) => (
                         <NavLink
                           key={child.path}
                           to={child.path}
