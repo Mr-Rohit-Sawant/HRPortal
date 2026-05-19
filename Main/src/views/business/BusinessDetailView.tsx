@@ -54,7 +54,7 @@ export default function BusinessDetailView() {
   if (!data) {
     return (
       <div className="space-y-5">
-        <button onClick={() => navigate('/business')} className="flex items-center gap-2 text-sm text-slate-500 hover:text-primary-600">
+        <button onClick={() => navigate('/business')} className="hidden lg:flex items-center gap-2 text-sm text-slate-500 hover:text-primary-600">
           <ArrowLeft size={18} /> Back to Business
         </button>
         <p className="text-center py-16 text-slate-400">Business not found</p>
@@ -71,7 +71,7 @@ export default function BusinessDetailView() {
 
   return (
     <div className="space-y-5">
-      <button onClick={() => navigate('/business')} className="flex items-center gap-2 text-sm text-slate-500 hover:text-primary-600">
+      <button onClick={() => navigate('/business')} className="hidden lg:flex items-center gap-2 text-sm text-slate-500 hover:text-primary-600">
         <ArrowLeft size={18} /> Back to Business
       </button>
 

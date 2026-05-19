@@ -701,7 +701,7 @@ export default function CVAddView() {
   return (
     <div>
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate('/cv-database')} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+        <button onClick={() => navigate('/cv-database')} className="hidden lg:flex p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
           <ArrowLeft size={18} />
         </button>
         <h1 className="page-title">{isEdit ? 'Edit Candidate' : 'Add New Candidate'}</h1>

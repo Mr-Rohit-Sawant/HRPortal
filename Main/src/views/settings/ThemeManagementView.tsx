@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Save, Upload, Palette, Type, Globe } from 'lucide-react';
+import { Save, Upload, Palette, Type, Globe, Smartphone } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { useThemeStore } from '../../stores/themeStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -18,7 +18,7 @@ const PRESET_PALETTES = [
 ];
 
 export default function ThemeManagementView() {
-  const { isDark, primaryColor: storePrimary, sidebarColor: storeSidebar, fontFamily, appName, appLogo, appFavicon, setTheme, toggleDark } = useThemeStore();
+  const { isDark, primaryColor: storePrimary, sidebarColor: storeSidebar, fontFamily, appName, appLogo, appFavicon, mobileTabBar, setTheme, toggleDark } = useThemeStore();
   const { user } = useAuthStore();
   const isSuperAdmin = user?.isSuperAdmin === true;
   const [logoFile, setLogoFile] = useState<File | null>(null);
@@ -349,6 +349,78 @@ export default function ThemeManagementView() {
               <p className="text-xs text-slate-500 mt-0.5">The quick brown fox</p>
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Mobile Experience */}
+      <div className="card p-6 space-y-4">
+        <div className="flex items-center gap-2">
+          <Smartphone size={18} className="text-primary-600" />
+          <h2 className="font-semibold text-slate-900 dark:text-white">Mobile Experience</h2>
+        </div>
+
+        <div className="flex items-center justify-between gap-4 py-1">
+          <div>
+            <p className="text-sm font-medium text-slate-900 dark:text-white">Mobile Tab Bar</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Show a bottom tab bar on mobile instead of the sidebar.<br />
+              Tabs: Dashboard · Jobs · Listings · Settings
+            </p>
+          </div>
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setTheme({ mobileTabBar: !mobileTabBar })}
+            onKeyDown={(e) => e.key === 'Enter' && setTheme({ mobileTabBar: !mobileTabBar })}
+            style={{
+              width: 48, height: 26, borderRadius: 13,
+              background: mobileTabBar ? 'rgb(37,99,235)' : '#cbd5e1',
+              position: 'relative', cursor: 'pointer', flexShrink: 0,
+              transition: 'background 0.2s',
+              display: 'inline-block',
+            }}
+          >
+            <span style={{
+              position: 'absolute', top: 3,
+              left: mobileTabBar ? 25 : 3,
+              width: 20, height: 20, borderRadius: '50%',
+              background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+              transition: 'left 0.2s',
+            }} />
+          </div>
+        </div>
+
+        {/* Visual preview */}
+        <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+          <div className="bg-slate-100 dark:bg-slate-800/60 px-3 py-1.5 flex items-center gap-1.5">
+            <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" />
+            <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" />
+            <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600" />
+            <span className="text-[10px] text-slate-400 ml-1">Mobile preview</span>
+          </div>
+          <div className="bg-white dark:bg-slate-900 h-20 flex items-center justify-center">
+            <p className="text-xs text-slate-400">Page content</p>
+          </div>
+          {mobileTabBar ? (
+            <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 flex">
+              {['Dashboard', 'Jobs', 'Listings', 'Settings'].map((t, i) => (
+                <div key={t} className={`flex-1 flex flex-col items-center py-1.5 gap-0.5 ${i === 0 ? 'text-primary-600' : 'text-slate-300 dark:text-slate-600'}`}>
+                  <div className="w-3.5 h-3.5 rounded bg-current opacity-70" />
+                  <span className="text-[8px] font-medium">{t}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700 flex items-center gap-2 px-3 py-2">
+              <div className="w-1.5 h-8 rounded bg-slate-200 dark:bg-slate-700 flex-shrink-0" />
+              <div className="space-y-1.5 flex-1">
+                <div className="h-1.5 rounded bg-slate-200 dark:bg-slate-700 w-3/4" />
+                <div className="h-1.5 rounded bg-slate-200 dark:bg-slate-700 w-1/2" />
+                <div className="h-1.5 rounded bg-slate-200 dark:bg-slate-700 w-2/3" />
+              </div>
+              <p className="text-[8px] text-slate-400">Sidebar</p>
+            </div>
+          )}
         </div>
       </div>
 

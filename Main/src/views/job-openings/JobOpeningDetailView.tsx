@@ -33,7 +33,7 @@ export default function JobOpeningDetailView() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/job-openings')} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
+          <button onClick={() => navigate('/job-openings')} className="hidden lg:flex p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
             <ArrowLeft size={18} />
           </button>
           <div>

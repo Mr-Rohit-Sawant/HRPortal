@@ -12,6 +12,17 @@
 
   * { box-sizing: border-box; }
 
+  html, body {
+    height: 100%;
+    overflow: hidden;           /* body never scrolls — only inner containers do */
+    overscroll-behavior: none;  /* kill iOS rubber-band / Android pull-to-refresh */
+  }
+
+  #root {
+    height: 100%;
+    overflow: hidden;
+  }
+
   body {
     font-family: var(--font-family);
     @apply bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100;

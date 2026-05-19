@@ -17,9 +17,10 @@ interface SidebarProps {
   isOpen: boolean;
   collapsed: boolean;
   onClose: () => void;
+  mobileHidden?: boolean;
 }
 
-export default function Sidebar({ isOpen, collapsed, onClose }: SidebarProps) {
+export default function Sidebar({ isOpen, collapsed, onClose, mobileHidden = false }: SidebarProps) {
   const { user, canAccess, logout } = useAuthStore();
   const { appName, appLogo } = useThemeStore();
   const { t } = useTranslation();
@@ -76,8 +77,8 @@ export default function Sidebar({ isOpen, collapsed, onClose }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile backdrop */}
-      {isOpen && (
+      {/* Mobile backdrop — only when tab bar is disabled */}
+      {isOpen && !mobileHidden && (
         <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={onClose} />
       )}
 
@@ -86,9 +87,11 @@ export default function Sidebar({ isOpen, collapsed, onClose }: SidebarProps) {
         onMouseLeave={() => setHovered(false)}
         className={cn(
           'fixed top-0 left-0 h-full z-50 flex flex-col transition-[width,transform] duration-300 overflow-hidden',
-          // Mobile: slide in/out
+          // Mobile: slide in/out; when mobileHidden always hide on mobile
           'lg:translate-x-0',
-          isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+          mobileHidden
+            ? '-translate-x-full lg:translate-x-0'
+            : isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
           // Width: 64px when collapsed+not-hovered, 256px otherwise
           isExpanded ? 'w-64' : 'w-16',
           // When hovered in collapsed state, cast a shadow to indicate overlay

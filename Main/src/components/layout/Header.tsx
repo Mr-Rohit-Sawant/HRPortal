@@ -1,8 +1,8 @@
-import { Menu, Bell, Sun, Moon, Globe } from 'lucide-react';
+import { Menu, Bell, Sun, Moon, Globe, ArrowLeft } from 'lucide-react';
 import CreateNotificationModal from '../../views/notifications/CreateNotificationModal';
 import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useThemeStore } from '../../stores/themeStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useLanguageStore } from '../../stores/languageStore';
@@ -16,9 +16,10 @@ import { SUPPORTED_LANGUAGES } from '../../i18n';
 interface HeaderProps {
   onMenuClick: () => void;
   title?: string;
+  hideMobileMenu?: boolean;
 }
 
-export default function Header({ onMenuClick, title }: HeaderProps) {
+export default function Header({ onMenuClick, title, hideMobileMenu = false }: HeaderProps) {
   const { isDark, toggleDark } = useThemeStore();
   const { user } = useAuthStore();
   const { language, setLanguage } = useLanguageStore();
@@ -27,6 +28,16 @@ export default function Header({ onMenuClick, title }: HeaderProps) {
   const [langOpen, setLangOpen] = useState(false);
   const [createNotifOpen, setCreateNotifOpen] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Tab-bar root screens — greeting shown; any other path → back button
+  const ROOT_PATHS = [
+    '/dashboard', '/job-openings', '/cv-database', '/employees',
+    '/clients', '/invoices', '/business', '/settings', '/profile',
+    '/notifications',
+  ];
+  const isRootScreen = ROOT_PATHS.includes(location.pathname);
+  const showBackButton = !isRootScreen;
 
   const { data: sysNotifications, refetch: refetchSys } = useQuery({
     queryKey: ['notifications'],
@@ -85,17 +96,36 @@ export default function Header({ onMenuClick, title }: HeaderProps) {
 
   return (
     <header className="h-16 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center px-4 gap-4 sticky top-0 z-30">
-      {/* Menu Button */}
+      {/* Menu Button — hidden on mobile when tab bar is active */}
       <button
         onClick={onMenuClick}
-        className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
+        className={cn(
+          'p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400',
+          hideMobileMenu && 'hidden lg:flex',
+        )}
       >
         <Menu size={20} />
       </button>
 
-      {/* Title */}
+      {/* Mobile: back button on internal screens, greeting on root screens */}
+      {showBackButton ? (
+        <button
+          onClick={() => navigate(-1)}
+          className="lg:hidden p-1 -ml-1 text-slate-800 dark:text-white"
+          aria-label="Back"
+        >
+          <ArrowLeft size={22} strokeWidth={2.5} />
+        </button>
+      ) : (
+        <div className="lg:hidden flex flex-col leading-tight">
+          <span className="text-[11px] text-slate-400 dark:text-slate-500">Hello,</span>
+          <span className="text-sm font-bold text-slate-900 dark:text-white leading-none">{user?.firstName}</span>
+        </div>
+      )}
+
+      {/* Title — desktop only */}
       {title && (
-        <h1 className="text-lg font-semibold text-slate-900 dark:text-white hidden sm:block">{title}</h1>
+        <h1 className="text-lg font-semibold text-slate-900 dark:text-white hidden lg:block">{title}</h1>
       )}
 
       <div className="flex-1" />

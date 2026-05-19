@@ -10,6 +10,7 @@ interface ThemeState {
   appName: string;
   appLogo: string;
   appFavicon: string;
+  mobileTabBar: boolean;
   toggleDark: () => void;
   setTheme: (settings: Partial<Omit<ThemeState, 'toggleDark' | 'setTheme' | 'applyTheme'>>) => void;
   applyTheme: () => void;
@@ -35,6 +36,7 @@ export const useThemeStore = create<ThemeState>()(
       appName: 'HR Recruitment System',
       appLogo: '',
       appFavicon: '',
+      mobileTabBar: true,
 
       toggleDark: () => {
         set((s) => ({ isDark: !s.isDark }));

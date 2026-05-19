@@ -161,7 +161,7 @@ export default function CVBulkImportView() {
             }
             navigate('/cv-database');
           }}
-          className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+          className="hidden lg:flex p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
         >
           <ArrowLeft size={18} />
         </button>

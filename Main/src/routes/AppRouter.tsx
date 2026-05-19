@@ -28,6 +28,7 @@ import NotificationsView from '../views/notifications/NotificationsView';
 import BusinessListView from '../views/business/BusinessListView';
 import BusinessDetailView from '../views/business/BusinessDetailView';
 import BugReportsView from '../views/settings/BugReportsView';
+import MobileSettingsView from '../views/settings/MobileSettingsView';
 
 // Shows login at "/" when not authenticated, redirects to dashboard when authenticated
 const RootRoute = () => {
@@ -87,6 +88,7 @@ export default function AppRouter() {
         <Route path="/notifications" element={<NotificationsView />} />
 
         {/* Settings */}
+        <Route path="/settings" element={<MobileSettingsView />} />
         <Route path="/profile" element={<ProfileView />} />
         <Route path="/settings/theme" element={<ThemeManagementView />} />
         <Route path="/settings/roles" element={<RoleManagementView />} />
