@@ -143,8 +143,8 @@ export default function AddClientView() {
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-3xl space-y-6">
         <div className="card p-6">
           <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Company Information</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="col-span-full sm:col-span-2">
               <label className="form-label">Company Name *</label>
               <input {...register('companyName')} className="form-input" />
               {errors.companyName && <p className="form-error">{errors.companyName.message}</p>}
@@ -192,8 +192,8 @@ export default function AddClientView() {
 
         <div className="card p-6">
           <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Address & Tax</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="col-span-full sm:col-span-2">
               <label className="form-label">Address</label>
               <textarea {...register('address')} rows={2} className="form-input resize-none" />
             </div>
@@ -267,7 +267,7 @@ export default function AddClientView() {
 
         <div className="card p-6">
           <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Contract Period</h2>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="form-label">Contract Start Date</label>
               <input {...register('contractStartDate')} type="date" className="form-input" />
@@ -276,7 +276,7 @@ export default function AddClientView() {
               <label className="form-label">Contract End Date</label>
               <input {...register('contractEndDate')} type="date" className="form-input" />
             </div>
-            <div className="col-span-2">
+            <div className="col-span-full sm:col-span-2">
               <label className="form-label">Notes</label>
               <textarea {...register('notes')} rows={3} className="form-input resize-none" />
             </div>

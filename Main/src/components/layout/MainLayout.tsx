@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import BugReportButton from '../bugReport/BugReportButton';
+import { cn } from '../../utils/helpers';
 
 const routeTitles: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -47,11 +48,11 @@ export default function MainLayout() {
         onClose={() => setSidebarOpen(false)}
       />
 
-      {/* Main Content — shifts based on sidebar width */}
-      <div
-        className="flex flex-col min-h-screen transition-[margin] duration-300"
-        style={{ marginLeft: sidebarCollapsed ? 64 : 256 }}
-      >
+      {/* Main Content — on mobile sidebar is overlay so no margin; on lg+ shift by sidebar width */}
+      <div className={cn(
+        'flex flex-col min-h-screen transition-[margin] duration-300',
+        sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
+      )}>
         <Header onMenuClick={handleMenuClick} title={title} />
         <main className="flex-1 p-4 sm:p-6">
           <Outlet />

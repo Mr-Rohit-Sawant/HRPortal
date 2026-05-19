@@ -125,7 +125,7 @@ export default function GenerateInvoiceView() {
             {/* Client */}
             <div className="card p-5">
               <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Invoice Details</h2>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="form-label">Client *</label>
                   <select {...register('clientId', { required: true })} className="form-input">
@@ -148,7 +148,44 @@ export default function GenerateInvoiceView() {
                   <Plus size={14} /> Add Row
                 </button>
               </div>
-              <div className="space-y-2">
+              {/* Mobile stacked view */}
+              <div className="space-y-3 sm:hidden">
+                {lineItems.map((item, i) => (
+                  <div key={i} className="bg-slate-50 dark:bg-slate-700/30 rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Item {i + 1}</span>
+                      <button type="button" onClick={() => removeItem(i)} disabled={lineItems.length === 1} className="text-red-400 hover:text-red-600 disabled:opacity-30">
+                        <X size={14} />
+                      </button>
+                    </div>
+                    <input
+                      value={item.description}
+                      onChange={(e) => updateItem(i, 'description', e.target.value)}
+                      className="form-input text-sm w-full"
+                      placeholder="Service description"
+                    />
+                    <div className="grid grid-cols-3 gap-2">
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1 block">Qty</label>
+                        <input value={item.quantity} onChange={(e) => updateItem(i, 'quantity', e.target.value)} type="number" min="1" className="form-input text-sm" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1 block">Rate (₹)</label>
+                        <input value={item.rate} onChange={(e) => updateItem(i, 'rate', e.target.value)} type="number" min="0" className="form-input text-sm" />
+                      </div>
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1 block">Amount</label>
+                        <div className="form-input text-sm font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/50">
+                          {formatCurrency(item.quantity * item.rate)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop table view */}
+              <div className="hidden sm:block space-y-2">
                 <div className="grid grid-cols-12 gap-2 text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
                   <span className="col-span-6">Description</span>
                   <span className="col-span-2">Qty</span>

@@ -124,7 +124,7 @@ export default function ThemeManagementView() {
           <h2 className="font-semibold text-slate-900 dark:text-white">Branding</h2>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           {/* Logo Upload */}
           <div>
             <label className="form-label">Application Logo</label>
@@ -265,7 +265,7 @@ export default function ThemeManagementView() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div>
             <label className="form-label">Primary Color</label>
             <div className="flex items-center gap-3 mt-1">
@@ -332,7 +332,7 @@ export default function ThemeManagementView() {
           <Type size={18} className="text-primary-600" />
           <h2 className="font-semibold text-slate-900 dark:text-white">Typography</h2>
         </div>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {FONT_OPTIONS.map((f) => (
             <button
               key={f.value}

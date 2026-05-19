@@ -1785,8 +1785,81 @@ export default function DynamicTable({
         {extraFilters}
       </div>
 
-      {/* Table area */}
-      <div className="overflow-x-auto">
+      {/* ── Mobile card view (< md) ─────────────────────────────────────────── */}
+      <div className="md:hidden">
+        {data.length === 0 ? (
+          <div className="text-center py-16 text-slate-400 text-sm">{t('common.noData')}</div>
+        ) : (
+          <div className="divide-y divide-slate-100 dark:divide-slate-700/40">
+            {data.map((row) => {
+              const primaryCol = fixedColumns[0];
+              const infoColumns = fixedColumns.slice(1);
+              const isSelected = selectedIds.has(row.id);
+              return (
+                <div
+                  key={row.id}
+                  className={cn(
+                    'px-4 py-3.5 flex flex-col gap-2 transition-colors active:bg-slate-50 dark:active:bg-slate-700/30',
+                    isSelected && 'bg-primary-50/60 dark:bg-primary-900/10'
+                  )}
+                >
+                  {/* Primary + checkbox row */}
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="checkbox" checked={isSelected} onChange={() => toggleRow(row.id)}
+                      className="w-4 h-4 mt-0.5 rounded border-slate-300 text-primary-600 cursor-pointer flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      {primaryCol.render(row)}
+                    </div>
+                    {/* Action buttons */}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {viewBtn && (!viewBtn.show || viewBtn.show(row)) && (
+                        <button
+                          onClick={() => viewBtn.onClick(row)}
+                          className="p-2 rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-600 dark:text-primary-400 active:bg-primary-100"
+                        >
+                          {viewBtn.icon || <ChevronRight size={15} />}
+                        </button>
+                      )}
+                      {editBtn && (!editBtn.show || editBtn.show(row)) && (
+                        <button
+                          onClick={() => editBtn.onClick(row)}
+                          className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 active:bg-slate-200"
+                        >
+                          {editBtn.icon || <Pencil size={15} />}
+                        </button>
+                      )}
+                      {deleteBtn && (!deleteBtn.show || deleteBtn.show(row)) && (
+                        <button
+                          onClick={() => deleteBtn.onClick(row)}
+                          className="p-2 rounded-lg text-slate-400 hover:text-red-500 active:bg-red-50 dark:active:bg-red-900/20"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {/* Info fields */}
+                  {infoColumns.length > 0 && (
+                    <div className="ml-7 flex flex-wrap gap-x-4 gap-y-1">
+                      {infoColumns.map((col) => (
+                        <div key={col.key} className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                          <span className="text-slate-300 dark:text-slate-600">{col.label}:</span>
+                          <span>{col.render(row)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ── Desktop table view (≥ md) ─────────────────────────────────────────── */}
+      <div className="hidden md:block overflow-x-auto">
         {groupedData ? (
           /* ── GROUPED VIEW ─────────────────────────────────────────────── */
           <div>
@@ -1832,7 +1905,7 @@ export default function DynamicTable({
             </tbody>
           </table>
         )}
-      </div>
+      </div>{/* end desktop table */}
 
       {/* Resize blue indicator line — limited to column header height */}
       {resizeX !== null && resizeRange !== null && (

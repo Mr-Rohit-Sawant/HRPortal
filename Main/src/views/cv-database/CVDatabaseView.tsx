@@ -543,7 +543,7 @@ export default function CVDatabaseView() {
           <h1 className="page-title">{t('cv.title')}</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{meta?.total ?? 0} {t('cv.candidate').toLowerCase()}s</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {/* Bulk Import dropdown */}
           <div ref={bulkMenuRef} className="relative">
             <button onClick={() => setBulkMenuOpen((v) => !v)} className="btn-secondary gap-1.5">

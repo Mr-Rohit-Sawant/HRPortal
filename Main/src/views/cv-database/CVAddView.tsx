@@ -414,7 +414,7 @@ function ExperienceCard({ exp, index, total, onChange, onRemove, canAddDropdownO
           )}
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="form-label text-xs">Designation *</label>
             <input value={exp.designation} onChange={(e) => onChange(index, 'designation', e.target.value)}
@@ -721,7 +721,7 @@ export default function CVAddView() {
               <h2 className="font-semibold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
                 <User size={18} className="text-primary-600" /> Personal Details
               </h2>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="form-label">First Name *</label>
                   <input {...register('firstName')} className="form-input" placeholder="John" />
@@ -783,7 +783,7 @@ export default function CVAddView() {
                 <label className="form-label flex items-center gap-1.5">
                   <MapPin size={14} className="text-primary-600" /> Location
                 </label>
-                <div className="grid grid-cols-3 gap-3 mt-1.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-1.5">
                   <div>
                     <label className="text-xs text-slate-500 mb-1 block">Country</label>
                     <CustomSelect value={countryVal} onChange={handleCountryChange}
@@ -845,7 +845,7 @@ export default function CVAddView() {
                         <Trash2 size={14} />
                       </button>
                     )}
-                    <div className="grid grid-cols-2 gap-4 pr-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pr-6">
                       <div>
                         <label className="form-label text-xs">Qualification</label>
                         <CustomSelect value={edu.qualification} onChange={(v) => updateEdu(idx, 'qualification', v)}
@@ -914,7 +914,7 @@ export default function CVAddView() {
             {/* ── Professional Details ──────────────────────────── */}
             <div className="card p-6">
               <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Professional Details</h2>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="form-label">Total Experience (years)</label>
                   <input {...register('totalExperience')} type="number" step="0.5" className="form-input" placeholder="3.5" />

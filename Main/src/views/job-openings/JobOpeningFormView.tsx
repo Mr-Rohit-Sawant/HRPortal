@@ -152,13 +152,13 @@ export default function JobOpeningFormView() {
             {/* Basic Info */}
             <div className="card p-6">
               <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Job Details</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="col-span-full sm:col-span-2">
                   <label className="form-label">Job Title *</label>
                   <input {...register('jobTitle')} className="form-input" placeholder="Senior React Developer" />
                   {errors.jobTitle && <p className="form-error">{errors.jobTitle.message}</p>}
                 </div>
-                <div className="col-span-2">
+                <div className="col-span-full sm:col-span-2">
                   <label className="form-label">Client *</label>
                   <select {...register('clientId')} className="form-input">
                     <option value="">Select Client</option>
@@ -166,7 +166,7 @@ export default function JobOpeningFormView() {
                   </select>
                   {errors.clientId && <p className="form-error">{errors.clientId.message}</p>}
                 </div>
-                <div className="col-span-2">
+                <div className="col-span-full sm:col-span-2">
                   <label className="form-label">Job Description</label>
                   <textarea {...register('description')} rows={5} className="form-input resize-none" placeholder="Describe the role, responsibilities, and requirements..." />
                 </div>

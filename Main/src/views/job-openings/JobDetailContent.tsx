@@ -1278,7 +1278,7 @@ export default function JobDetailContent({ data, jobId, onRefresh, compact = fal
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {data.workLocation && (
                 <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                   <MapPin size={13} className="text-slate-400 flex-shrink-0" />{data.workLocation}

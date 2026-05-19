@@ -192,7 +192,7 @@ export default function AddEmployeeView() {
           <div className="xl:col-span-2 space-y-6">
             <div className="card p-6">
               <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Personal Information</h2>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="form-label">First Name *</label>
                   <input {...register('firstName')} className="form-input" />
@@ -230,7 +230,7 @@ export default function AddEmployeeView() {
 
             <div className="card p-6">
               <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Work Details</h2>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="form-label">Department</label>
                   <input {...register('department')} className="form-input" placeholder="HR, Tech, Sales..." />
@@ -323,8 +323,8 @@ export default function AddEmployeeView() {
 
             <div className="card p-6">
               <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Address</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="col-span-full sm:col-span-2">
                   <label className="form-label">Address</label>
                   <textarea {...register('address')} rows={2} className="form-input resize-none" />
                 </div>

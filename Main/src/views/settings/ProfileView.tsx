@@ -128,7 +128,7 @@ export default function ProfileView() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="form-label">First Name *</label>
               <input {...regProfile('firstName')} className="form-input" />
@@ -213,7 +213,7 @@ export default function ProfileView() {
       {/* Account Info */}
       <div className="card p-6">
         <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Account Information</h2>
-        <div className="grid grid-cols-2 gap-4 text-sm">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-slate-500 mb-1">Email</p>
             <p className="font-medium text-slate-900 dark:text-white">{user?.email}</p>

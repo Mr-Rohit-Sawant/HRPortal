@@ -161,7 +161,7 @@ export default function Header({ onMenuClick, title }: HeaderProps) {
           </button>
 
           {notifOpen && (
-            <div className="absolute right-0 top-12 w-80 card shadow-xl overflow-hidden z-50">
+            <div className="fixed sm:absolute left-2 right-2 sm:left-auto sm:right-0 top-16 sm:top-12 w-auto sm:w-80 card shadow-xl overflow-hidden z-50">
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-700">
                 <span className="font-semibold text-sm">{t('common.notifications')}</span>
                 {unread > 0 && (

@@ -80,11 +80,11 @@
   }
 
   .page-header {
-    @apply flex items-center justify-between mb-6;
+    @apply flex items-start sm:items-center justify-between mb-6 gap-3 flex-wrap;
   }
 
   .page-title {
-    @apply text-2xl font-bold text-slate-900 dark:text-white;
+    @apply text-xl sm:text-2xl font-bold text-slate-900 dark:text-white;
   }
 
   .table-header {

@@ -451,7 +451,7 @@ export default function BusinessListView() {
       {/* Create Modal */}
       <Modal isOpen={createOpen} onClose={() => { setCreateOpen(false); setForm(EMPTY); }} title="Create Business" size="md">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="form-label">Business Name *</label>
               <input className="form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Acme Corp" />
@@ -464,7 +464,7 @@ export default function BusinessListView() {
 
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide pt-1">Admin Account</p>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="form-label">First Name *</label>
               <input className="form-input" value={form.adminFirstName} onChange={e => setForm(f => ({ ...f, adminFirstName: e.target.value }))} placeholder="First name" />

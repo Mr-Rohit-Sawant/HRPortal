@@ -49,7 +49,7 @@ export default function CVDetailView() {
           </button>
           <h1 className="page-title">{data.firstName} {data.lastName}</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {data.cvFile && (
             <button onClick={handleDownload} className="btn-secondary">
               <Download size={16} /> Download CV
