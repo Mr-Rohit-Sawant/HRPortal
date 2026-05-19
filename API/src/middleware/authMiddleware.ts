@@ -6,7 +6,7 @@ import { prisma } from '../app';
 declare global {
   namespace Express {
     interface Request {
-      user?: TokenPayload & { permissions?: string[] };
+      user?: TokenPayload & { permissions?: string[]; businessId?: string | null };
     }
   }
 }
@@ -21,11 +21,7 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
       include: {
-        role: {
-          include: {
-            permissions: { include: { permission: true } },
-          },
-        },
+        role: { include: { permissions: { include: { permission: true } } } },
       },
     });
 
@@ -37,7 +33,21 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
       (rp) => `${rp.permission.module}:${rp.permission.action}`
     );
 
-    req.user = { ...payload, permissions };
+    // Block login if the user's business is disabled or removed (non-super-admins only)
+    if (!payload.isSuperAdmin && user.businessId) {
+      const business = await prisma.business.findUnique({
+        where: { id: user.businessId },
+        select: { status: true, deletedAt: true },
+      });
+      if (business?.status === 'INACTIVE') {
+        throw new AppError('Business account is disabled. Contact your administrator.', 403);
+      }
+      if (business?.deletedAt) {
+        throw new AppError('Business account has been removed.', 403);
+      }
+    }
+
+    req.user = { ...payload, permissions, businessId: user.businessId ?? null };
     next();
   } catch (err) {
     next(err);

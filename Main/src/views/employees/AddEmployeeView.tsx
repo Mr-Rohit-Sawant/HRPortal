@@ -9,6 +9,7 @@ import { cn } from '../../utils/helpers';
 import { employeeService } from '../../services/employeeService';
 import { settingsService } from '../../services/settingsService';
 import { useAuthStore } from '../../stores/authStore';
+import BusinessSelector from '../../components/common/BusinessSelector';
 import ResetPasswordModal from '../../components/employees/ResetPasswordModal';
 import toast from 'react-hot-toast';
 import { useDropzone } from 'react-dropzone';
@@ -42,8 +43,10 @@ export default function AddEmployeeView() {
   const queryClient = useQueryClient();
   const isEdit = !!id;
   const { user: currentUser } = useAuthStore();
-  const canResetPassword = currentUser?.isSuperAdmin || currentUser?.role?.name === 'admin';
+  const isSuperAdmin = currentUser?.isSuperAdmin ?? false;
+  const canResetPassword = isSuperAdmin || currentUser?.role?.name === 'admin';
   const [resetPwOpen, setResetPwOpen] = useState(false);
+  const [selectedBusinessId, setSelectedBusinessId] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
   const [extraCountries, setExtraCountries] = useState<string[]>([]);
   const [extraStates, setExtraStates] = useState<string[]>([]);
@@ -88,6 +91,7 @@ export default function AddEmployeeView() {
         state: existingEmployee.state || 'Maharashtra',
         country: existingEmployee.country || 'India',
       });
+      if (existingEmployee.businessId) setSelectedBusinessId(existingEmployee.businessId);
     }
   }, [existingEmployee, reset]);
 
@@ -146,6 +150,7 @@ export default function AddEmployeeView() {
       const finalPwd = autoPassword ? generatedPwd : customPassword;
       if (finalPwd) fd.append('password', finalPwd);
     }
+    if (isSuperAdmin && selectedBusinessId) fd.append('businessId', selectedBusinessId);
 
     if (isEdit) updateMutation.mutate({ id: id!, fd: fd as any });
     else createMutation.mutate(fd);
@@ -177,6 +182,11 @@ export default function AddEmployeeView() {
         <h1 className="page-title">{isEdit ? 'Edit Employee' : 'Add Employee'}</h1>
       </div>
 
+      {isSuperAdmin && (
+        <BusinessSelector value={selectedBusinessId} onChange={setSelectedBusinessId} className="mb-6" />
+      )}
+
+      {(!isSuperAdmin || selectedBusinessId) && (
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2 space-y-6">
@@ -435,6 +445,7 @@ export default function AddEmployeeView() {
           </div>
         </div>
       </form>
+      )}
 
       {isEdit && existingEmployee && (
         <ResetPasswordModal

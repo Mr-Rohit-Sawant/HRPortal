@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import BugReportButton from '../bugReport/BugReportButton';
 
 const routeTitles: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -56,6 +57,8 @@ export default function MainLayout() {
           <Outlet />
         </main>
       </div>
+
+      <BugReportButton />
     </div>
   );
 }

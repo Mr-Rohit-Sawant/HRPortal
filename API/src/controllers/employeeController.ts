@@ -7,13 +7,19 @@ import { sendWelcomeEmail } from '../services/emailService';
 import path from 'path';
 import fs from 'fs';
 
+const EMPLOYEE_SORT_FIELDS: Record<string, string> = {
+  name: 'firstName', department: 'department', joiningDate: 'joiningDate',
+  status: 'status', createdAt: 'createdAt',
+};
+
 export const getEmployees = async (req: Request, res: Response) => {
-  const { page = '1', limit = '10', search, status, department, roleId } = req.query;
+  const { page = '1', limit = '10', search, status, department, roleId, sortBy, sortDir } = req.query;
   const take = parseInt(limit as string);
   const pg = parseInt(page as string);
   const { skip } = paginate(pg, take);
 
-  const where: any = { isSuperAdmin: false };
+  const bizFilter = req.user?.isSuperAdmin ? {} : (req.user?.businessId ? { businessId: req.user.businessId } : {});
+  const where: any = { isSuperAdmin: false, ...bizFilter };
   if (status) where.status = status;
   if (department) where.department = { contains: department };
   if (roleId) where.roleId = roleId as string;
@@ -27,16 +33,22 @@ export const getEmployees = async (req: Request, res: Response) => {
     ];
   }
 
+  const prismaField = EMPLOYEE_SORT_FIELDS[sortBy as string];
+  const orderBy = prismaField
+    ? { [prismaField]: (sortDir === 'desc' ? 'desc' : 'asc') as 'asc' | 'desc' }
+    : { createdAt: 'desc' as const };
+
   const [employees, total] = await Promise.all([
     prisma.user.findMany({
       where,
       skip,
       take,
-      orderBy: { createdAt: 'desc' },
+      orderBy,
       select: {
         id: true, employeeId: true, firstName: true, lastName: true, email: true, phone: true,
         department: true, designation: true, joiningDate: true, status: true, profilePhoto: true,
         role: { select: { id: true, name: true } },
+        businessId: true, business: { select: { id: true, name: true } },
         lastLoginAt: true, createdAt: true,
       },
     }),
@@ -59,7 +71,7 @@ export const getEmployeeById = async (req: Request, res: Response) => {
 export const createEmployee = async (req: Request, res: Response) => {
   const {
     email, username, password, firstName, lastName, phone, department, designation,
-    roleId, joiningDate, salary, address, city, state, country, sendWelcome,
+    roleId, joiningDate, salary, address, city, state, country, sendWelcome, businessId: bodyBusinessId,
   } = req.body;
 
   // Pre-validate uniqueness with clear errors
@@ -107,6 +119,7 @@ export const createEmployee = async (req: Request, res: Response) => {
       employeeId,
       profilePhoto,
       createdBy: req.user?.userId,
+      businessId: req.user?.isSuperAdmin ? (bodyBusinessId || undefined) : (req.user?.businessId ?? undefined),
     },
     include: { role: true },
   });
@@ -136,7 +149,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
   const existing = await prisma.user.findUnique({ where: { id } });
   if (!existing) throw new AppError('Employee not found', 404);
 
-  const { email, username, firstName, lastName, phone, department, designation, roleId, joiningDate, salary, address, city, state, country } = req.body;
+  const { email, username, firstName, lastName, phone, department, designation, roleId, joiningDate, salary, address, city, state, country, businessId } = req.body;
 
   // Pre-validate uniqueness with clear errors
   if (email && email !== existing.email) {
@@ -164,6 +177,7 @@ export const updateEmployee = async (req: Request, res: Response) => {
     ...(city !== undefined && { city }),
     ...(state !== undefined && { state }),
     ...(country !== undefined && { country }),
+    ...(req.user?.isSuperAdmin && businessId ? { businessId } : {}),
   };
 
   if (req.file) {

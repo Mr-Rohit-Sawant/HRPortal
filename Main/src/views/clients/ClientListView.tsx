@@ -9,6 +9,7 @@ import {
 import { clientService } from '../../services/clientService';
 import { Client } from '../../types';
 import { formatDate, cn } from '../../utils/helpers';
+import { useAuthStore } from '../../stores/authStore';
 import Pagination from '../../components/common/Pagination';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import DynamicTable, { FixedColumn, ActionButton } from '../../components/common/DynamicTable';
@@ -21,6 +22,8 @@ const QUERY_KEY = ['clients'];
 
 function ClientQuickPanel({ id, onClose }: { id: string; onClose: () => void }) {
   const navigate = useNavigate();
+  const { canAccess } = useAuthStore();
+  const canViewContacts = canAccess('clients:view_contacts');
 
   const { data, isLoading } = useQuery({
     queryKey: ['client', id],
@@ -83,7 +86,10 @@ function ClientQuickPanel({ id, onClose }: { id: string; onClose: () => void }) 
             <div className="grid grid-cols-2 divide-x divide-slate-100 dark:divide-slate-700/60 border-b border-slate-100 dark:border-slate-700/60">
               <div className="px-4 py-3 text-center">
                 <p className="text-xs text-slate-400 mb-0.5">Contact</p>
-                <p className="text-sm font-semibold text-slate-800 dark:text-white">{data.contactPerson}</p>
+                {canViewContacts
+                  ? <p className="text-sm font-semibold text-slate-800 dark:text-white">{data.contactPerson}</p>
+                  : <p className="text-sm font-semibold text-slate-400 tracking-widest">••••••••••</p>
+                }
               </div>
               <div className="px-4 py-3 text-center">
                 <p className="text-xs text-slate-400 mb-0.5">Contract End</p>
@@ -94,14 +100,26 @@ function ClientQuickPanel({ id, onClose }: { id: string; onClose: () => void }) 
             {/* Contact details */}
             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700/60 space-y-2.5">
               {data.email && (
-                <a href={`mailto:${data.email}`} className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600 truncate">
-                  <Mail size={13} className="text-slate-400 flex-shrink-0" />{data.email}
-                </a>
+                canViewContacts ? (
+                  <a href={`mailto:${data.email}`} className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600 truncate">
+                    <Mail size={13} className="text-slate-400 flex-shrink-0" />{data.email}
+                  </a>
+                ) : (
+                  <div className="flex items-center gap-2.5 text-sm text-slate-400 dark:text-slate-500">
+                    <Mail size={13} className="flex-shrink-0" /><span className="tracking-widest">••••••••••••</span>
+                  </div>
+                )
               )}
               {data.phone && (
-                <a href={`tel:${data.phone}`} className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600">
-                  <Phone size={13} className="text-slate-400 flex-shrink-0" />{data.phone}
-                </a>
+                canViewContacts ? (
+                  <a href={`tel:${data.phone}`} className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600">
+                    <Phone size={13} className="text-slate-400 flex-shrink-0" />{data.phone}
+                  </a>
+                ) : (
+                  <div className="flex items-center gap-2.5 text-sm text-slate-400 dark:text-slate-500">
+                    <Phone size={13} className="flex-shrink-0" /><span className="tracking-widest">••••••••••</span>
+                  </div>
+                )
               )}
               {data.website && (
                 <a href={data.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600 truncate">
@@ -145,6 +163,9 @@ function ClientQuickPanel({ id, onClose }: { id: string; onClose: () => void }) 
 export default function ClientListView() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { canAccess, user: currentUser } = useAuthStore();
+  const canViewContacts = canAccess('clients:view_contacts');
+  const isSuperAdmin = !!currentUser?.isSuperAdmin;
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState('');
@@ -161,7 +182,10 @@ export default function ClientListView() {
   const { data, isLoading } = useQuery({
     queryKey: [...QUERY_KEY, page, limit, debouncedSearch, sort],
     queryFn: async () => {
-      const res = await clientService.getClients({ page, limit, search: debouncedSearch });
+      const res = await clientService.getClients({
+        page, limit, search: debouncedSearch,
+        ...(sort.field ? { sortBy: sort.field, sortDir: sort.dir } : {}),
+      });
       return res.data;
     },
   });
@@ -230,10 +254,16 @@ export default function ClientListView() {
       sortable: true,
       render: (row: Client) => (
         <div>
-          <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{row.contactPerson}</p>
+          {canViewContacts
+            ? <p className="text-xs font-medium text-slate-700 dark:text-slate-300">{row.contactPerson}</p>
+            : <p className="text-xs text-slate-400 tracking-widest">••••••••••</p>
+          }
           <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
             <Mail size={10} />
-            <span className="truncate max-w-28">{row.email}</span>
+            {canViewContacts
+              ? <span className="truncate max-w-28">{row.email}</span>
+              : <span className="tracking-widest">••••••••••</span>
+            }
           </div>
         </div>
       ),
@@ -245,7 +275,7 @@ export default function ClientListView() {
       render: (row: Client) => (
         <div className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-300">
           <Phone size={11} className="text-slate-400 flex-shrink-0" />
-          {row.phone || '—'}
+          {canViewContacts ? (row.phone || '—') : <span className="tracking-widest">••••••••</span>}
         </div>
       ),
     },
@@ -276,6 +306,17 @@ export default function ClientListView() {
         <span className="text-xs text-slate-500">{row.contractEndDate ? formatDate(row.contractEndDate) : '—'}</span>
       ),
     },
+    ...(isSuperAdmin ? [{
+      key: 'business',
+      label: 'Business',
+      width: 130,
+      render: (row: any) => row.business ? (
+        <button onClick={() => navigate('/business/' + row.businessId)}
+          className="text-xs text-primary-600 hover:underline">
+          {row.business.name}
+        </button>
+      ) : <span className="text-xs text-slate-400">—</span>,
+    }] : []),
   ];
 
   // ── Action buttons ────────────────────────────────────────────────────────
@@ -285,12 +326,12 @@ export default function ClientListView() {
       label: 'View',
       onClick: (row: Client) => navigate(`/clients/${row.id}`),
     },
-    {
+    ...(canAccess('clients:update') ? [{
       icon: <Edit size={14} />,
       label: 'Edit',
       onClick: (row: Client) => navigate(`/clients/${row.id}/edit`),
-    },
-    {
+    }] : []),
+    ...(canAccess('clients:update') ? [{
       label: 'Toggle Status',
       onClick: (row: Client) => toggleMutation.mutate(row.id),
       render: (row: Client) => (
@@ -307,13 +348,13 @@ export default function ClientListView() {
           {row.isActive ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
         </button>
       ),
-    },
-    {
+    }] : []),
+    ...(canAccess('clients:delete') ? [{
       icon: <Trash2 size={14} />,
       label: 'Delete',
       onClick: (row: Client) => setDeleteId(row.id),
       className: 'text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20',
-    },
+    }] : []),
   ];
 
   return (

@@ -5,6 +5,7 @@ declare global {
         interface Request {
             user?: TokenPayload & {
                 permissions?: string[];
+                businessId?: string | null;
             };
         }
     }

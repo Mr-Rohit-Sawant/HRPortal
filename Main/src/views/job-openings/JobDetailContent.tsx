@@ -54,6 +54,7 @@ const DEFAULT_ROUND_COLS = [
 
 function AssignedEmployeesBar({ jobId, assignees, onRefresh }: { jobId: string; assignees: any[]; onRefresh: () => void }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -85,7 +86,10 @@ function AssignedEmployeesBar({ jobId, assignees, onRefresh }: { jobId: string; 
   const toggleMutation = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'add' | 'remove' }) =>
       jobService.toggleAssignee(jobId, id, action),
-    onSuccess: () => onRefresh(),
+    onSuccess: () => {
+      onRefresh();
+      queryClient.invalidateQueries({ queryKey: ['jobs'] });
+    },
     onError: () => toast.error('Failed to update'),
   });
 

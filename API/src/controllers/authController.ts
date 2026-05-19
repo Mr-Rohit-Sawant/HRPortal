@@ -12,7 +12,7 @@ export const login = async (req: Request, res: Response) => {
 
   const user = await prisma.user.findFirst({
     where: { OR: [{ email }, { username: email }] },
-    include: { role: true },
+    include: { role: { include: { permissions: { include: { permission: true } } } } },
   });
 
   console.log('USER FOUND:', !!user, user?.status);
@@ -67,10 +67,14 @@ export const login = async (req: Request, res: Response) => {
 
   setAuthCookies(res, accessToken, refreshToken, !!rememberMe);
 
+  const permissions = user.role.permissions.map(
+    (rp) => `${rp.permission.module}:${rp.permission.action}`
+  );
+
   res.json({
     success: true,
     message: 'Login successful',
-    data: { user: sanitizeUser({ ...user, role: user.role }) },
+    data: { user: { ...sanitizeUser({ ...user, role: user.role }), permissions } },
   });
 };
 

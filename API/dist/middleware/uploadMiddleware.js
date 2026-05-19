@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadDocument = exports.uploadFont = exports.uploadProfilePhoto = exports.uploadLogo = exports.uploadBulkCV = exports.uploadCV = void 0;
+exports.uploadBugReport = exports.uploadCustomFiles = exports.uploadDocument = exports.uploadFont = exports.uploadProfilePhoto = exports.uploadLogo = exports.uploadBulkCV = exports.uploadCV = void 0;
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
@@ -83,5 +83,31 @@ exports.uploadFont = (0, multer_1.default)({
 exports.uploadDocument = (0, multer_1.default)({
     storage: createStorage('uploads/documents'),
     limits: { fileSize: maxSizeMB },
+});
+const customFileFilter = (_req, file, cb) => {
+    const allowed = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.xlsx', '.xls', '.txt'];
+    const ext = path_1.default.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext))
+        cb(null, true);
+    else
+        cb(new errorMiddleware_1.AppError(`File type ${ext} not supported.`, 400));
+};
+exports.uploadCustomFiles = (0, multer_1.default)({
+    storage: createStorage('uploads/custom'),
+    fileFilter: customFileFilter,
+    limits: { fileSize: maxSizeMB, files: 20 },
+});
+const bugReportFileFilter = (_req, file, cb) => {
+    const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.webm', '.mov'];
+    const ext = path_1.default.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext))
+        cb(null, true);
+    else
+        cb(new errorMiddleware_1.AppError('Only image or video files are allowed', 400));
+};
+exports.uploadBugReport = (0, multer_1.default)({
+    storage: createStorage('uploads/bug-reports'),
+    fileFilter: bugReportFileFilter,
+    limits: { fileSize: 10 * 1024 * 1024, files: 10 },
 });
 //# sourceMappingURL=uploadMiddleware.js.map

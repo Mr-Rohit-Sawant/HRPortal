@@ -11,12 +11,17 @@ const helpers_1 = require("../utils/helpers");
 const emailService_1 = require("../services/emailService");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
+const EMPLOYEE_SORT_FIELDS = {
+    name: 'firstName', department: 'department', joiningDate: 'joiningDate',
+    status: 'status', createdAt: 'createdAt',
+};
 const getEmployees = async (req, res) => {
-    const { page = '1', limit = '10', search, status, department, roleId } = req.query;
+    const { page = '1', limit = '10', search, status, department, roleId, sortBy, sortDir } = req.query;
     const take = parseInt(limit);
     const pg = parseInt(page);
     const { skip } = (0, helpers_1.paginate)(pg, take);
-    const where = { isSuperAdmin: false };
+    const bizFilter = req.user?.isSuperAdmin ? {} : (req.user?.businessId ? { businessId: req.user.businessId } : {});
+    const where = { isSuperAdmin: false, ...bizFilter };
     if (status)
         where.status = status;
     if (department)
@@ -32,16 +37,21 @@ const getEmployees = async (req, res) => {
             { employeeId: { contains: search } },
         ];
     }
+    const prismaField = EMPLOYEE_SORT_FIELDS[sortBy];
+    const orderBy = prismaField
+        ? { [prismaField]: (sortDir === 'desc' ? 'desc' : 'asc') }
+        : { createdAt: 'desc' };
     const [employees, total] = await Promise.all([
         app_1.prisma.user.findMany({
             where,
             skip,
             take,
-            orderBy: { createdAt: 'desc' },
+            orderBy,
             select: {
                 id: true, employeeId: true, firstName: true, lastName: true, email: true, phone: true,
                 department: true, designation: true, joiningDate: true, status: true, profilePhoto: true,
                 role: { select: { id: true, name: true } },
+                businessId: true, business: { select: { id: true, name: true } },
                 lastLoginAt: true, createdAt: true,
             },
         }),
@@ -62,7 +72,7 @@ const getEmployeeById = async (req, res) => {
 };
 exports.getEmployeeById = getEmployeeById;
 const createEmployee = async (req, res) => {
-    const { email, username, password, firstName, lastName, phone, department, designation, roleId, joiningDate, salary, address, city, state, country, sendWelcome, } = req.body;
+    const { email, username, password, firstName, lastName, phone, department, designation, roleId, joiningDate, salary, address, city, state, country, sendWelcome, businessId: bodyBusinessId, } = req.body;
     // Pre-validate uniqueness with clear errors
     const existingEmail = await app_1.prisma.user.findUnique({ where: { email } });
     if (existingEmail)
@@ -104,6 +114,7 @@ const createEmployee = async (req, res) => {
             employeeId,
             profilePhoto,
             createdBy: req.user?.userId,
+            businessId: req.user?.isSuperAdmin ? (bodyBusinessId || undefined) : (req.user?.businessId ?? undefined),
         },
         include: { role: true },
     });
@@ -125,7 +136,7 @@ const updateEmployee = async (req, res) => {
     const existing = await app_1.prisma.user.findUnique({ where: { id } });
     if (!existing)
         throw new errorMiddleware_1.AppError('Employee not found', 404);
-    const { email, username, firstName, lastName, phone, department, designation, roleId, joiningDate, salary, address, city, state, country } = req.body;
+    const { email, username, firstName, lastName, phone, department, designation, roleId, joiningDate, salary, address, city, state, country, businessId } = req.body;
     // Pre-validate uniqueness with clear errors
     if (email && email !== existing.email) {
         const emailConflict = await app_1.prisma.user.findUnique({ where: { email } });
@@ -153,6 +164,7 @@ const updateEmployee = async (req, res) => {
         ...(city !== undefined && { city }),
         ...(state !== undefined && { state }),
         ...(country !== undefined && { country }),
+        ...(req.user?.isSuperAdmin && businessId ? { businessId } : {}),
     };
     if (req.file) {
         updates.profilePhoto = `uploads/profiles/${req.file.filename}`;

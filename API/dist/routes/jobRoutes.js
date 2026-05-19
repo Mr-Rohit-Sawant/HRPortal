@@ -12,6 +12,7 @@ router.post('/', (0, authMiddleware_1.requirePermission)('jobs', 'create'), uplo
 router.post('/import-csv', (0, authMiddleware_1.requirePermission)('jobs', 'create'), jobController_1.importJobsCSV);
 router.put('/:id', (0, authMiddleware_1.requirePermission)('jobs', 'update'), uploadMiddleware_1.uploadDocument.single('jdDocument'), jobController_1.updateJob);
 router.delete('/:id', (0, authMiddleware_1.requirePermission)('jobs', 'delete'), jobController_1.deleteJob);
+router.post('/:id/duplicate', (0, authMiddleware_1.requirePermission)('jobs', 'create'), jobController_1.duplicateJob);
 router.patch('/:id/custom-fields', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.updateCustomFields);
 router.patch('/:id/assignees', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.toggleJobAssignee);
 router.post('/:id/close', (0, authMiddleware_1.requirePermission)('jobs', 'update'), jobController_1.closeJob);

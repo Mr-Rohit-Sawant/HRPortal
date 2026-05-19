@@ -78,7 +78,7 @@ export default function ProfileView() {
     },
     onSuccess: (res) => {
       toast.success('Profile updated');
-      setUser(res.data.data);
+      setUser(res.data.data ?? null);
       queryClient.invalidateQueries({ queryKey: ['me'] });
     },
   });

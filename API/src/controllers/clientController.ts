@@ -3,13 +3,19 @@ import { prisma } from '../app';
 import { AppError } from '../middleware/errorMiddleware';
 import { paginate, buildPaginationMeta } from '../utils/helpers';
 
+const CLIENT_SORT_FIELDS: Record<string, string> = {
+  company: 'companyName', contactPerson: 'contactPerson',
+  contractEndDate: 'contractEndDate', createdAt: 'createdAt',
+};
+
 export const getClients = async (req: Request, res: Response) => {
-  const { page = '1', limit = '10', search, isActive } = req.query;
+  const { page = '1', limit = '10', search, isActive, sortBy, sortDir } = req.query;
   const take = parseInt(limit as string);
   const pg = parseInt(page as string);
   const { skip } = paginate(pg, take);
 
-  const where: any = {};
+  const bizFilter = req.user?.isSuperAdmin ? {} : (req.user?.businessId ? { businessId: req.user.businessId } : {});
+  const where: any = { ...bizFilter };
   if (isActive !== undefined) where.isActive = isActive === 'true';
   if (search) {
     where.OR = [
@@ -21,13 +27,21 @@ export const getClients = async (req: Request, res: Response) => {
     ];
   }
 
+  const prismaField = CLIENT_SORT_FIELDS[sortBy as string];
+  const orderBy = prismaField
+    ? { [prismaField]: (sortDir === 'desc' ? 'desc' : 'asc') as 'asc' | 'desc' }
+    : { createdAt: 'desc' as const };
+
   const [clients, total] = await Promise.all([
     prisma.client.findMany({
       where,
       skip,
       take,
-      orderBy: { createdAt: 'desc' },
-      include: { _count: { select: { jobOpenings: true, invoices: true } } },
+      orderBy,
+      include: {
+        _count: { select: { jobOpenings: true, invoices: true } },
+        business: { select: { id: true, name: true } },
+      },
     }),
     prisma.client.count({ where }),
   ]);
@@ -52,7 +66,7 @@ export const createClient = async (req: Request, res: Response) => {
   const {
     companyName, contactPerson, email, phone, alternatePhone, address,
     city, state, country, pincode, gstNumber, panNumber, industry,
-    website, contractStartDate, contractEndDate, notes,
+    website, contractStartDate, contractEndDate, notes, businessId: bodyBusinessId,
   } = req.body;
 
   const existing = await prisma.client.findFirst({ where: { email } });
@@ -67,6 +81,7 @@ export const createClient = async (req: Request, res: Response) => {
       contractEndDate: contractEndDate ? new Date(contractEndDate) : null,
       notes,
       createdBy: req.user?.userId,
+      businessId: req.user?.isSuperAdmin ? (bodyBusinessId || undefined) : (req.user?.businessId ?? undefined),
     },
   });
 

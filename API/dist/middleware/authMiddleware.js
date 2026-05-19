@@ -13,18 +13,27 @@ const authenticate = async (req, _res, next) => {
         const user = await app_1.prisma.user.findUnique({
             where: { id: payload.userId },
             include: {
-                role: {
-                    include: {
-                        permissions: { include: { permission: true } },
-                    },
-                },
+                role: { include: { permissions: { include: { permission: true } } } },
             },
         });
         if (!user || user.status !== 'ACTIVE') {
             throw new errorMiddleware_1.AppError('Account is inactive or not found', 401);
         }
         const permissions = user.role.permissions.map((rp) => `${rp.permission.module}:${rp.permission.action}`);
-        req.user = { ...payload, permissions };
+        // Block login if the user's business is disabled or removed (non-super-admins only)
+        if (!payload.isSuperAdmin && user.businessId) {
+            const business = await app_1.prisma.business.findUnique({
+                where: { id: user.businessId },
+                select: { status: true, deletedAt: true },
+            });
+            if (business?.status === 'INACTIVE') {
+                throw new errorMiddleware_1.AppError('Business account is disabled. Contact your administrator.', 403);
+            }
+            if (business?.deletedAt) {
+                throw new errorMiddleware_1.AppError('Business account has been removed.', 403);
+            }
+        }
+        req.user = { ...payload, permissions, businessId: user.businessId ?? null };
         next();
     }
     catch (err) {

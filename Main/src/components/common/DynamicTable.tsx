@@ -52,6 +52,7 @@ interface DynamicTableProps {
   onBulkDelete?: (ids: string[]) => void;
   onRowExpand?: (row: any) => void;
   expandedRowId?: string | null;
+  onSelectionChange?: (ids: string[]) => void;
 }
 
 // ─── Column type config ───────────────────────────────────────────────────────
@@ -770,12 +771,243 @@ function CustomCell({
     );
   }
 
+  // ── FILES ──────────────────────────────────────────────────────────────────
+  if (col.dataType === 'FILES') {
+    const files: { name: string; path: string; size: number }[] = (() => {
+      try { return JSON.parse(displayValue || '[]'); } catch { return []; }
+    })();
+    const [uploading, setUploading] = useState(false);
+
+    const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selected = e.target.files;
+      if (!selected || !selected.length) return;
+      setUploading(true);
+      try {
+        const fd = new FormData();
+        Array.from(selected).forEach((f) => fd.append('files', f));
+        const res = await api.post('/settings/upload-custom-files', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+        const uploaded: { name: string; path: string; size: number }[] = res.data.data;
+        const next = [...files, ...uploaded];
+        handleSave(JSON.stringify(next));
+      } catch { toast.error('Upload failed'); }
+      finally { setUploading(false); }
+      e.target.value = '';
+    };
+
+    const removeFile = (idx: number) => {
+      const next = files.filter((_, i) => i !== idx);
+      handleSave(JSON.stringify(next));
+    };
+
+    const getFileIcon = (name: string) => {
+      const ext = name.split('.').pop()?.toLowerCase() || '';
+      if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext)) return '🖼️';
+      if (ext === 'pdf') return '📄';
+      if (['doc', 'docx'].includes(ext)) return '📝';
+      if (['ppt', 'pptx'].includes(ext)) return '📊';
+      if (['xls', 'xlsx'].includes(ext)) return '📊';
+      return '📎';
+    };
+
+    const [overlayOpen, setOverlayOpen] = useState(false);
+    const [overlayPos, setOverlayPos] = useState<{ top: number; left: number } | null>(null);
+    const overlayRef = useRef<HTMLDivElement>(null);
+    const triggerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      if (!overlayOpen) return;
+      const h = (e: MouseEvent) => {
+        if (overlayRef.current && !overlayRef.current.contains(e.target as Node)) setOverlayOpen(false);
+      };
+      document.addEventListener('mousedown', h);
+      return () => document.removeEventListener('mousedown', h);
+    }, [overlayOpen]);
+
+    const openOverlay = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+      setOverlayPos({ top: r.bottom + 6, left: r.left });
+      setOverlayOpen((v) => !v);
+    };
+
+    const extra = files.length - 1;
+
+    return (
+      <div className="flex items-center gap-1.5 w-full" ref={triggerRef}>
+        {files.length === 0 ? (
+          <>
+            {col.isEditable ? (
+              <label className={cn('flex items-center gap-1 text-[10px] text-primary-500 hover:text-primary-700 cursor-pointer', uploading && 'opacity-50 pointer-events-none')}>
+                {uploading ? <Loader2 size={10} className="animate-spin" /> : <Plus size={10} />}
+                {uploading ? 'Uploading…' : 'Attach files'}
+                <input type="file" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.svg,.xlsx,.xls,.txt" className="hidden" onChange={handleFileSelect} disabled={uploading} />
+              </label>
+            ) : (
+              <span className="text-slate-300 dark:text-slate-600 text-xs">—</span>
+            )}
+          </>
+        ) : (
+          <>
+            {/* First file chip */}
+            <a
+              href={`/uploads/${files[0].path}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 truncate max-w-[110px]"
+              title={files[0].name}
+            >
+              <span>{getFileIcon(files[0].name)}</span>
+              <span className="truncate">{files[0].name}</span>
+            </a>
+
+            {/* +N bubble */}
+            {extra > 0 && (
+              <button
+                onClick={openOverlay}
+                className="flex-shrink-0 w-5 h-5 rounded-full bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 text-[10px] font-semibold flex items-center justify-center hover:bg-primary-100 dark:hover:bg-primary-900/40 hover:text-primary-700 transition-colors"
+              >
+                +{extra}
+              </button>
+            )}
+
+            {/* Attach more */}
+            {col.isEditable && (
+              <label className={cn('flex-shrink-0 flex items-center cursor-pointer text-slate-400 hover:text-primary-500 transition-colors', uploading && 'opacity-50 pointer-events-none')}>
+                {uploading ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}
+                <input type="file" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.gif,.webp,.svg,.xlsx,.xls,.txt" className="hidden" onChange={handleFileSelect} disabled={uploading} />
+              </label>
+            )}
+          </>
+        )}
+
+        {/* Overlay with all files */}
+        {overlayOpen && overlayPos && (
+          <div
+            ref={overlayRef}
+            style={{ position: 'fixed', top: overlayPos.top, left: overlayPos.left, zIndex: 9999, minWidth: 220 }}
+            className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
+          >
+            <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100 dark:border-slate-700">
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">{files.length} file{files.length > 1 ? 's' : ''}</span>
+              <button onClick={() => setOverlayOpen(false)} className="text-slate-400 hover:text-slate-600"><X size={12} /></button>
+            </div>
+            <div className="py-1 max-h-56 overflow-y-auto">
+              {files.map((f, i) => (
+                <div key={i} className="flex items-center gap-2 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-700/60 group/of">
+                  <span className="text-sm flex-shrink-0">{getFileIcon(f.name)}</span>
+                  <a
+                    href={`/uploads/${f.path}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-slate-700 dark:text-slate-200 hover:text-primary-600 truncate flex-1"
+                    title={f.name}
+                  >
+                    {f.name}
+                  </a>
+                  {col.isEditable && (
+                    <button
+                      onClick={() => { removeFile(i); if (files.length <= 1) setOverlayOpen(false); }}
+                      className="opacity-0 group-hover/of:opacity-100 text-slate-300 hover:text-red-400 transition-all flex-shrink-0"
+                    >
+                      <X size={11} />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   // ── LOCATION ───────────────────────────────────────────────────────────────
   if (col.dataType === 'LOCATION') {
+    const locOptions: string[] = col.config?.options || [];
+    const [locSearch, setLocSearch] = useState('');
+    const [locAddMode, setLocAddMode] = useState(false);
+    const [newLoc, setNewLoc] = useState('');
+    const locRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      if (!editing) return;
+      const h = (e: MouseEvent) => { if (locRef.current && !locRef.current.contains(e.target as Node)) setEditing(false); };
+      document.addEventListener('mousedown', h);
+      return () => document.removeEventListener('mousedown', h);
+    }, [editing]);
+
+    const filtered = locOptions.filter((o) => o.toLowerCase().includes(locSearch.toLowerCase()));
+
+    const addNewLocation = async () => {
+      const loc = newLoc.trim();
+      if (!loc || locOptions.includes(loc)) return;
+      await settingsService.updateColumn(col.id, { config: { ...(col.config || {}), options: [...locOptions, loc] } });
+      queryClient.invalidateQueries({ queryKey: ['columns', col.module] });
+      handleSave(loc);
+      setLocAddMode(false);
+      setNewLoc('');
+    };
+
     if (editing) {
       return (
-        <input autoFocus value={value} onChange={(e) => setValue(e.target.value)} onBlur={(e) => handleSave(e.target.value)}
-          className="form-input text-xs py-1 w-full" placeholder="City, State" />
+        <div ref={locRef} className="relative">
+          <input
+            autoFocus
+            value={locSearch}
+            onChange={(e) => setLocSearch(e.target.value)}
+            className="form-input text-xs py-1 w-full"
+            placeholder="Search location…"
+          />
+          <div
+            style={{ position: 'fixed', zIndex: 9999 }}
+            className="mt-1 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden"
+            ref={(el) => {
+              if (el && locRef.current) {
+                const r = locRef.current.getBoundingClientRect();
+                el.style.top = `${r.bottom + 4}px`;
+                el.style.left = `${r.left}px`;
+                el.style.width = `${Math.max(r.width, 180)}px`;
+              }
+            }}
+          >
+            <div className="max-h-44 overflow-y-auto py-1">
+              {filtered.length === 0 && !locAddMode && (
+                <p className="text-xs text-slate-400 text-center py-3">No matches</p>
+              )}
+              {filtered.map((opt) => (
+                <button
+                  key={opt}
+                  onMouseDown={(e) => { e.preventDefault(); handleSave(opt); }}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-slate-50 dark:hover:bg-slate-700/60 text-left"
+                >
+                  <MapPin size={11} className="text-slate-400 flex-shrink-0" />
+                  {opt}
+                </button>
+              ))}
+            </div>
+            {locAddMode ? (
+              <div className="px-2 py-2 border-t border-slate-100 dark:border-slate-700 flex gap-1.5">
+                <input
+                  autoFocus
+                  value={newLoc}
+                  onChange={(e) => setNewLoc(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') addNewLocation(); if (e.key === 'Escape') setLocAddMode(false); }}
+                  className="form-input text-xs py-1 flex-1"
+                  placeholder="New location name"
+                />
+                <button onMouseDown={(e) => { e.preventDefault(); addNewLocation(); }} className="btn-primary text-xs px-2 py-1">Add</button>
+              </div>
+            ) : (
+              <button
+                onMouseDown={(e) => { e.preventDefault(); setLocAddMode(true); }}
+                className="w-full flex items-center gap-1.5 px-3 py-2 text-xs text-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20 border-t border-slate-100 dark:border-slate-700"
+              >
+                <Plus size={11} /> Add new location
+              </button>
+            )}
+          </div>
+        </div>
       );
     }
     return (
@@ -796,7 +1028,108 @@ function CustomCell({
     );
   }
 
-  // ── Default: TEXT / NUMBER / EMAIL / PHONE / URL ───────────────────────────
+  // ── EMAIL ──────────────────────────────────────────────────────────────────
+  if (col.dataType === 'EMAIL') {
+    const [err, setErr] = useState('');
+    const validateAndSave = (v: string) => {
+      if (v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { setErr('Invalid email'); return; }
+      setErr('');
+      handleSave(v);
+    };
+    if (editing) return (
+      <div>
+        <input autoFocus type="email" value={value} onChange={(e) => { setValue(e.target.value); setErr(''); }}
+          onBlur={(e) => validateAndSave(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') validateAndSave(value); if (e.key === 'Escape') setEditing(false); }}
+          className={cn('form-input text-xs py-1 w-full', err && 'border-red-400')} placeholder="email@example.com" />
+        {err && <p className="text-[10px] text-red-500 mt-0.5">{err}</p>}
+      </div>
+    );
+    return (
+      <div onClick={() => col.isEditable && setEditing(true)} className="cursor-pointer flex items-center gap-1 text-xs text-slate-600 dark:text-slate-300 truncate">
+        {displayValue ? <><Mail size={10} className="text-slate-400 flex-shrink-0" />{displayValue}</> : <span className="text-slate-300 dark:text-slate-600">—</span>}
+      </div>
+    );
+  }
+
+  // ── URL ────────────────────────────────────────────────────────────────────
+  if (col.dataType === 'URL') {
+    const [err, setErr] = useState('');
+    const validateAndSave = (v: string) => {
+      if (v) {
+        try { new URL(v.startsWith('http') ? v : `https://${v}`); }
+        catch { setErr('Invalid URL'); return; }
+      }
+      setErr('');
+      handleSave(v);
+    };
+    if (editing) return (
+      <div>
+        <input autoFocus type="url" value={value} onChange={(e) => { setValue(e.target.value); setErr(''); }}
+          onBlur={(e) => validateAndSave(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') validateAndSave(value); if (e.key === 'Escape') setEditing(false); }}
+          className={cn('form-input text-xs py-1 w-full', err && 'border-red-400')} placeholder="https://example.com" />
+        {err && <p className="text-[10px] text-red-500 mt-0.5">{err}</p>}
+      </div>
+    );
+    return (
+      <div onClick={() => col.isEditable && setEditing(true)} className="cursor-pointer flex items-center gap-1 text-xs text-slate-600 dark:text-slate-300 truncate">
+        {displayValue
+          ? <a href={displayValue.startsWith('http') ? displayValue : `https://${displayValue}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 text-primary-600 hover:underline truncate"><Link size={10} className="flex-shrink-0" />{displayValue}</a>
+          : <span className="text-slate-300 dark:text-slate-600">—</span>}
+      </div>
+    );
+  }
+
+  // ── PHONE ──────────────────────────────────────────────────────────────────
+  if (col.dataType === 'PHONE') {
+    const [err, setErr] = useState('');
+    const validateAndSave = (v: string) => {
+      if (v && !/^[+\d][\d\s\-().]{6,19}$/.test(v)) { setErr('Invalid phone number'); return; }
+      setErr('');
+      handleSave(v);
+    };
+    if (editing) return (
+      <div>
+        <input autoFocus type="tel" value={value} onChange={(e) => { setValue(e.target.value); setErr(''); }}
+          onBlur={(e) => validateAndSave(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') validateAndSave(value); if (e.key === 'Escape') setEditing(false); }}
+          className={cn('form-input text-xs py-1 w-full', err && 'border-red-400')} placeholder="+91 98765 43210" />
+        {err && <p className="text-[10px] text-red-500 mt-0.5">{err}</p>}
+      </div>
+    );
+    return (
+      <div onClick={() => col.isEditable && setEditing(true)} className="cursor-pointer flex items-center gap-1 text-xs text-slate-600 dark:text-slate-300">
+        {displayValue ? <><Phone size={10} className="text-slate-400 flex-shrink-0" />{displayValue}</> : <span className="text-slate-300 dark:text-slate-600">—</span>}
+      </div>
+    );
+  }
+
+  // ── NUMBER ─────────────────────────────────────────────────────────────────
+  if (col.dataType === 'NUMBER') {
+    const [err, setErr] = useState('');
+    const validateAndSave = (v: string) => {
+      if (v && isNaN(Number(v))) { setErr('Must be a number'); return; }
+      setErr('');
+      handleSave(v);
+    };
+    if (editing) return (
+      <div>
+        <input autoFocus type="number" value={value} onChange={(e) => { setValue(e.target.value); setErr(''); }}
+          onBlur={(e) => validateAndSave(e.target.value)}
+          onKeyDown={(e) => { if (e.key === 'Enter') validateAndSave(value); if (e.key === 'Escape') setEditing(false); }}
+          className={cn('form-input text-xs py-1 w-full', err && 'border-red-400')} placeholder="0" />
+        {err && <p className="text-[10px] text-red-500 mt-0.5">{err}</p>}
+      </div>
+    );
+    return (
+      <div onClick={() => col.isEditable && setEditing(true)} className={cn('text-xs text-slate-600 dark:text-slate-300 cursor-pointer', col.isEditable && 'hover:underline decoration-dashed')}>
+        {displayValue !== '' ? <span className="font-mono">{displayValue}</span> : <span className="text-slate-300 dark:text-slate-600">—</span>}
+      </div>
+    );
+  }
+
+  // ── Default: TEXT ──────────────────────────────────────────────────────────
   if (editing) {
     return (
       <input autoFocus value={value} onChange={(e) => setValue(e.target.value)} onBlur={(e) => handleSave(e.target.value)}
@@ -835,12 +1168,16 @@ function getDateBucket(dateStr: string): string {
 export default function DynamicTable({
   module, entityApiPath, data, isLoading, fixedColumns, actionButtons,
   sortField, sortDir, onSort, extraFilters, onCustomFiltersChange, queryKey,
-  excludeColumnNames, onBulkDelete, onRowExpand, expandedRowId,
+  excludeColumnNames, onBulkDelete, onRowExpand, expandedRowId, onSelectionChange,
 }: DynamicTableProps) {
   const { t } = useTranslation();
 
   // ── Row selection & bulk actions ───────────────────────────────────────────
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    onSelectionChange?.([...selectedIds]);
+  }, [selectedIds]); // eslint-disable-line react-hooks/exhaustive-deps
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [rowCtxMenu, setRowCtxMenu] = useState<{ row: any; x: number; y: number } | null>(null);
   const rowCtxMenuRef = useRef<HTMLDivElement>(null);
@@ -1267,18 +1604,27 @@ export default function DynamicTable({
               i === 0 ? cn(
                 'sticky left-10 z-10 shadow-[2px_0_0_0_theme(colors.slate.100)] dark:shadow-[2px_0_0_0_theme(colors.slate.700/40)]',
                 isExpanded || isSelected ? 'bg-primary-50 dark:bg-primary-900/15' : 'bg-white dark:bg-slate-800 group-hover/row:bg-slate-50 dark:group-hover/row:bg-slate-800'
-              ) : 'text-center'
+              ) : ''
             )}
             style={{ width: colWidths[col.key] ?? col.width, maxWidth: colWidths[col.key] ?? col.width }}>
-            {col.render(row)}
+            {i === 0
+              ? col.render(row)
+              : <div className="flex items-center justify-center">{col.render(row)}</div>
+            }
           </td>
         ))}
         {visibleCustomCols.map(col => (
           <td key={col.id}
-            className={cn('px-3 py-2.5 overflow-hidden', col.dataType !== 'TEXT' && 'text-center')}
+            className="px-3 py-2.5 overflow-hidden"
             style={{ width: colWidths[col.id] ?? (col.width ?? 120), maxWidth: colWidths[col.id] ?? (col.width ?? 120) }}>
-            <CustomCell col={col} row={row} entityApiPath={entityApiPath} queryKey={queryKey}
-              selectedIds={selectedIds} onBulkSave={handleBulkSave} />
+            {col.dataType !== 'TEXT'
+              ? <div className="flex items-center justify-center">
+                  <CustomCell col={col} row={row} entityApiPath={entityApiPath} queryKey={queryKey}
+                    selectedIds={selectedIds} onBulkSave={handleBulkSave} />
+                </div>
+              : <CustomCell col={col} row={row} entityApiPath={entityApiPath} queryKey={queryKey}
+                  selectedIds={selectedIds} onBulkSave={handleBulkSave} />
+            }
           </td>
         ))}
         {/* Delete-only action cell */}
@@ -1305,6 +1651,8 @@ export default function DynamicTable({
 
   const deleteBtn = actionButtons.find(b => b.label === 'Delete');
   const viewBtn = actionButtons.find(b => b.label === 'View');
+  const editBtn = actionButtons.find(b => b.label === 'Edit');
+  const duplicateBtn = actionButtons.find(b => b.label === 'Duplicate');
 
   return (
     <>
@@ -1568,7 +1916,7 @@ export default function DynamicTable({
       {/* Row right-click context menu */}
       {rowCtxMenu && (
         <div ref={rowCtxMenuRef} style={{ position: 'fixed', top: rowCtxMenu.y, left: rowCtxMenu.x, zIndex: 9999 }}
-          className="w-40 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden py-1">
+          className="w-44 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden py-1">
           {viewBtn && (
             <button onClick={() => { viewBtn.onClick(rowCtxMenu.row); setRowCtxMenu(null); }}
               className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors text-left">
@@ -1576,9 +1924,21 @@ export default function DynamicTable({
               View
             </button>
           )}
+          {editBtn && (
+            <button onClick={() => { editBtn.onClick(rowCtxMenu.row); setRowCtxMenu(null); }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors text-left">
+              <Pencil size={14} className="text-slate-400" /> Edit
+            </button>
+          )}
+          {duplicateBtn && (
+            <button onClick={() => { duplicateBtn.onClick(rowCtxMenu.row); setRowCtxMenu(null); }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-colors text-left">
+              <Copy size={14} className="text-slate-400" /> Duplicate
+            </button>
+          )}
           {deleteBtn && (!deleteBtn.show || deleteBtn.show(rowCtxMenu.row)) && (
             <>
-              {viewBtn && <div className="mx-3 my-1 border-t border-slate-100 dark:border-slate-700" />}
+              <div className="mx-3 my-1 border-t border-slate-100 dark:border-slate-700" />
               <button onClick={() => { deleteBtn.onClick(rowCtxMenu.row); setRowCtxMenu(null); }}
                 className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-left">
                 <Trash2 size={14} /> Delete

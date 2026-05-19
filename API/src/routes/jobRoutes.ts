@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import {
-  getJobs, getJobById, createJob, updateJob, deleteJob,
+  getJobs, getJobById, createJob, updateJob, deleteJob, duplicateJob,
   addRound, updateSlot, addCandidateToRound, removeCandidateFromRound, importJobsCSV, updateCustomFields,
   renameRound, updateRoundColumns, updateSlotCustomField, bulkUpdateSlots, toggleJobAssignee, closeJob,
   startReplacement, updatePostSelectionRecord, uploadOfferLetter, updatePSRColumns,
@@ -18,6 +18,7 @@ router.post('/', requirePermission('jobs', 'create'), uploadDocument.single('jdD
 router.post('/import-csv', requirePermission('jobs', 'create'), importJobsCSV);
 router.put('/:id', requirePermission('jobs', 'update'), uploadDocument.single('jdDocument'), updateJob);
 router.delete('/:id', requirePermission('jobs', 'delete'), deleteJob);
+router.post('/:id/duplicate', requirePermission('jobs', 'create'), duplicateJob);
 router.patch('/:id/custom-fields', requirePermission('jobs', 'update'), updateCustomFields);
 router.patch('/:id/assignees', requirePermission('jobs', 'update'), toggleJobAssignee);
 router.post('/:id/close', requirePermission('jobs', 'update'), closeJob);

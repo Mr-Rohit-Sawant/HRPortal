@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.markAllNotificationsRead = exports.markNotificationRead = exports.getNotifications = exports.getAuditLogs = exports.reorderColumns = exports.deleteColumnDefinition = exports.upsertColumnDefinition = exports.getColumnDefinitions = exports.getPermissions = exports.cloneRole = exports.deleteRole = exports.updateRole = exports.createRole = exports.getRoles = exports.uploadFont = exports.uploadLogo = exports.updateAppSettings = exports.getAppSettings = void 0;
+exports.uploadCustomFieldFiles = exports.markAllNotificationsRead = exports.markNotificationRead = exports.getNotifications = exports.getAuditLogs = exports.reorderColumns = exports.deleteColumnDefinition = exports.upsertColumnDefinition = exports.getColumnDefinitions = exports.getPermissions = exports.cloneRole = exports.deleteRole = exports.updateRole = exports.createRole = exports.getRoles = exports.uploadFont = exports.uploadLogo = exports.updateAppSettings = exports.getAppSettings = void 0;
 const app_1 = require("../app");
 const errorMiddleware_1 = require("../middleware/errorMiddleware");
 const helpers_1 = require("../utils/helpers");
@@ -284,4 +284,20 @@ const markAllNotificationsRead = async (req, res) => {
     res.json({ success: true });
 };
 exports.markAllNotificationsRead = markAllNotificationsRead;
+// --- Custom Field File Upload ---
+const uploadCustomFieldFiles = async (req, res) => {
+    const files = req.files;
+    if (!files || files.length === 0) {
+        res.status(400).json({ success: false, message: 'No files uploaded' });
+        return;
+    }
+    const result = files.map((f) => ({
+        name: f.originalname,
+        path: `custom/${f.filename}`,
+        size: f.size,
+        mimeType: f.mimetype,
+    }));
+    res.json({ success: true, data: result });
+};
+exports.uploadCustomFieldFiles = uploadCustomFieldFiles;
 //# sourceMappingURL=settingsController.js.map

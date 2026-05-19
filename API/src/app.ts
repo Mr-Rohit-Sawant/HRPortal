@@ -16,6 +16,9 @@ import employeeRoutes from './routes/employeeRoutes';
 import clientRoutes from './routes/clientRoutes';
 import invoiceRoutes from './routes/invoiceRoutes';
 import settingsRoutes from './routes/settingsRoutes';
+import userNotificationRoutes from './routes/userNotificationRoutes';
+import businessRoutes from './routes/businessRoutes';
+import bugReportRoutes from './routes/bugReportRoutes';
 
 import { notFound, errorHandler } from './middleware/errorMiddleware';
 import { logger } from './utils/logger';
@@ -39,13 +42,23 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'),
-  max: parseInt(process.env.RATE_LIMIT_MAX || '100'),
+// Rate limiting — strict on auth, generous on general API
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30,                   // 30 login/reset attempts per IP per 15 min
   message: { success: false, message: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
-app.use('/api/', limiter);
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,       // 1 minute
+  max: parseInt(process.env.RATE_LIMIT_MAX || '500'),
+  message: { success: false, message: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/auth/', authLimiter);
+app.use('/api/', apiLimiter);
 
 // Body parsing
 app.use(compression());
@@ -65,6 +78,9 @@ app.use('/api/employees', employeeRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/user-notifications', userNotificationRoutes);
+app.use('/api/businesses', businessRoutes);
+app.use('/api/bug-reports', bugReportRoutes);
 
 // Health check
 app.get('/api/health', (_req, res) => {

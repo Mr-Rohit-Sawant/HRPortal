@@ -3,18 +3,29 @@ import { prisma } from '../app';
 import { AppError } from '../middleware/errorMiddleware';
 import { paginate, buildPaginationMeta } from '../utils/helpers';
 
+const JOB_SORT_FIELDS: Record<string, string> = {
+  jobTitle: 'jobTitle', status: 'status', priority: 'priority',
+  workLocation: 'workLocation', closingDate: 'closingDate', createdAt: 'createdAt',
+};
+
 export const getJobs = async (req: Request, res: Response) => {
-  const { page = '1', limit = '10', search, status, priority, clientId, assigneeId, location } = req.query;
+  const { page = '1', limit = '10', search, status, priority, clientId, assigneeId, assigneeIds, location, sortBy, sortDir } = req.query;
   const take = parseInt(limit as string);
   const pg = parseInt(page as string);
   const { skip } = paginate(pg, take);
 
-  const where: any = {};
+  const bizFilter = req.user?.isSuperAdmin ? {} : (req.user?.businessId ? { businessId: req.user.businessId } : {});
+  const where: any = { ...bizFilter };
   if (status) where.status = status;
   if (priority) where.priority = priority;
   if (clientId) where.clientId = clientId as string;
   if (location) where.workLocation = { contains: location };
-  if (assigneeId) where.assignees = { some: { id: assigneeId as string } };
+  if (assigneeIds) {
+    const ids = (assigneeIds as string).split(',').filter(Boolean);
+    if (ids.length > 0) where.assignees = { some: { id: { in: ids } } };
+  } else if (assigneeId) {
+    where.assignees = { some: { id: assigneeId as string } };
+  }
   if (search) {
     where.OR = [
       { jobTitle: { contains: search } },
@@ -24,16 +35,22 @@ export const getJobs = async (req: Request, res: Response) => {
     ];
   }
 
+  const prismaField = JOB_SORT_FIELDS[sortBy as string];
+  const orderBy: any = prismaField
+    ? { [prismaField]: (sortDir === 'desc' ? 'desc' : 'asc') as 'asc' | 'desc' }
+    : [{ status: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }];
+
   const [jobs, total] = await Promise.all([
     prisma.jobOpening.findMany({
       where,
       skip,
       take,
-      orderBy: [{ status: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }],
+      orderBy,
       include: {
         client: { select: { id: true, companyName: true } },
         assignees: { select: { id: true, firstName: true, lastName: true, profilePhoto: true } },
         _count: { select: { applications: true, rounds: true } },
+        business: { select: { id: true, name: true } },
       },
     }),
     prisma.jobOpening.count({ where }),
@@ -87,7 +104,7 @@ export const createJob = async (req: Request, res: Response) => {
     jobTitle, clientId, description, requiredSkills, preferredSkills,
     experienceMin, experienceMax, salaryMin, salaryMax, jobType,
     workLocation, workMode, numberOfOpenings, status, priority,
-    closingDate, tags, customFields, assigneeIds,
+    closingDate, tags, customFields, assigneeIds, businessId: bodyBusinessId,
   } = req.body;
 
   const jdDocument = req.file ? `uploads/documents/${req.file.filename}` : null;
@@ -114,6 +131,7 @@ export const createJob = async (req: Request, res: Response) => {
       tags: tags ? JSON.parse(tags) : null,
       customFields: customFields ? JSON.parse(customFields) : null,
       createdBy: req.user?.userId,
+      businessId: req.user?.isSuperAdmin ? (bodyBusinessId || undefined) : (req.user?.businessId ?? undefined),
       assignees: assigneeIds ? { connect: JSON.parse(assigneeIds).map((id: string) => ({ id })) } : undefined,
     },
     include: { client: true, assignees: { select: { id: true, firstName: true, lastName: true } } },
@@ -153,6 +171,33 @@ export const updateJob = async (req: Request, res: Response) => {
 
   const job = await prisma.jobOpening.update({ where: { id }, data: updates, include: { client: true, assignees: true } });
   res.json({ success: true, message: 'Job updated', data: job });
+};
+
+export const duplicateJob = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const original = await prisma.jobOpening.findUniqueOrThrow({
+    where: { id },
+    include: { assignees: { select: { id: true } } },
+  });
+
+  const { id: _id, createdAt, updatedAt, assignees, ...fields } = original as any;
+
+  const copy = await prisma.jobOpening.create({
+    data: {
+      ...fields,
+      jobTitle: `${original.jobTitle} (Copy)`,
+      status: 'DRAFT',
+      createdBy: req.user?.userId,
+      assignees: assignees.length ? { connect: assignees.map((a: any) => ({ id: a.id })) } : undefined,
+    },
+    include: { client: true, assignees: { select: { id: true, firstName: true, lastName: true } } },
+  });
+
+  await prisma.auditLog.create({
+    data: { userId: req.user?.userId, userEmail: req.user?.email, action: 'CREATE', module: 'jobs', recordId: copy.id },
+  });
+
+  res.status(201).json({ success: true, message: 'Job duplicated', data: copy });
 };
 
 export const deleteJob = async (req: Request, res: Response) => {

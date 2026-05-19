@@ -121,6 +121,34 @@ enum ColumnDataType {
 }
 
 // ============================================================
+// BUSINESS (MULTI-TENANCY)
+// ============================================================
+
+model Business {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  adminEmail  String?
+  logo        String?
+  status      String   @default("ACTIVE")
+  deleteScheduledAt DateTime?
+  deletedAt         DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users             User[]
+  candidates        Candidate[]
+  clients           Client[]
+  jobOpenings       JobOpening[]
+  invoices          Invoice[]
+  userNotifications UserNotification[]
+  bugReports        BugReport[]
+
+  @@index([status])
+  @@map("businesses")
+}
+
+// ============================================================
 // ROLES & PERMISSIONS
 // ============================================================
 
@@ -201,18 +229,23 @@ model User {
   refreshToken    String?    @db.Text
   notificationPrefs Json?
   customFields    Json?
+  businessId      String?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
   createdBy       String?
 
   role        Role         @relation(fields: [roleId], references: [id])
+  business    Business?    @relation(fields: [businessId], references: [id])
   auditLogs   AuditLog[]   @relation("UserAuditLogs")
   createdJobs JobOpening[] @relation("CreatedByUser")
   assignedJobs JobOpening[] @relation("AssignedToUser")
   invoices    Invoice[]    @relation("InvoiceCreatedBy")
+  userNotificationsCreated UserNotification[] @relation("UserNotifCreator")
+  bugReports  BugReport[]  @relation("UserBugReports")
 
   @@index([email])
   @@index([status])
+  @@index([businessId])
   @@map("users")
 }
 
@@ -279,16 +312,19 @@ model Candidate {
   // Search Index
   searchVector    String?         @db.Text
 
+  businessId      String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   createdBy       String?
 
+  business              Business?       @relation(fields: [businessId], references: [id])
   jobApplications       JobApplication[]
   interviewSlots        InterviewSlot[]
   postSelectionRecords  PostSelectionRecord[]
 
   @@index([status])
   @@index([isPriority])
+  @@index([businessId])
   @@fulltext([firstName, lastName])
   @@map("candidates")
 }
@@ -334,14 +370,18 @@ model Client {
   isActive          Boolean   @default(true)
   notes             String?   @db.Text
   customFields      Json?
+  businessId        String?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   createdBy         String?
 
-  jobOpenings JobOpening[]
-  invoices    Invoice[]
+  business          Business?  @relation(fields: [businessId], references: [id])
+  jobOpenings       JobOpening[]
+  invoices          Invoice[]
+  userNotifications UserNotification[] @relation("UserNotifClient")
 
   @@index([isActive])
+  @@index([businessId])
   @@map("clients")
 }
 
@@ -370,11 +410,13 @@ model JobOpening {
   jdDocument       String?
   tags             Json?
   customFields     Json?
+  businessId       String?
   createdBy        String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
   client       Client          @relation(fields: [clientId], references: [id])
+  business     Business?       @relation(fields: [businessId], references: [id])
   creator      User?           @relation("CreatedByUser", fields: [createdBy], references: [id])
   assignees    User[]          @relation("AssignedToUser")
   applications JobApplication[]
@@ -384,6 +426,7 @@ model JobOpening {
   @@index([status])
   @@index([priority])
   @@index([clientId])
+  @@index([businessId])
   @@map("job_openings")
 }
 
@@ -475,15 +518,18 @@ model Invoice {
   paymentReference String?
   notes           String?       @db.Text
   pdfPath         String?
+  businessId      String?
   createdBy       String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  client    Client @relation(fields: [clientId], references: [id])
-  createdByUser User?  @relation("InvoiceCreatedBy", fields: [createdBy], references: [id])
+  client        Client   @relation(fields: [clientId], references: [id])
+  business      Business? @relation(fields: [businessId], references: [id])
+  createdByUser User?    @relation("InvoiceCreatedBy", fields: [createdBy], references: [id])
 
   @@index([status])
   @@index([clientId])
+  @@index([businessId])
   @@map("invoices")
 }
 
@@ -593,4 +639,57 @@ model PostSelectionRecord {
 
   @@unique([jobId, candidateId, processGroup])
   @@map("post_selection_records")
+}
+
+// ============================================================
+// USER NOTIFICATIONS
+// ============================================================
+
+model UserNotification {
+  id          String   @id @default(uuid())
+  title       String
+  description String   @db.Text
+  sendTo      Json
+  files       Json?
+  clientId    String?
+  businessId  String?
+  readBy      Json?
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User      @relation("UserNotifCreator", fields: [createdById], references: [id])
+  client    Client?   @relation("UserNotifClient", fields: [clientId], references: [id])
+  business  Business? @relation(fields: [businessId], references: [id])
+
+  @@index([createdById])
+  @@index([businessId])
+  @@map("user_notifications")
+}
+
+// ============================================================
+// BUG REPORTS
+// ============================================================
+
+model BugReport {
+  id              String   @id @default(uuid())
+  type            String   @default("Bug")
+  description     String   @db.Text
+  priority        String   @default("medium")
+  reportedByEmail String
+  reportedByName  String?
+  userId          String?
+  businessId      String?
+  businessName    String?
+  files           Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user     User?     @relation("UserBugReports", fields: [userId], references: [id], onDelete: SetNull)
+  business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([priority])
+  @@index([businessId])
+  @@map("bug_reports")
 }

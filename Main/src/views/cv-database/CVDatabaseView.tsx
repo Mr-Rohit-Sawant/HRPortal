@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import CSVImportModal from './CSVImportModal';
 import { cvService } from '../../services/cvService';
+import { useAuthStore } from '../../stores/authStore';
 import { Candidate } from '../../types';
 import { formatCTC, formatExperience, getStatusColor, formatDate, cn } from '../../utils/helpers';
 import Pagination from '../../components/common/Pagination';
@@ -261,6 +262,8 @@ export default function CVDatabaseView() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t } = useTranslation();
+  const { canAccess, user: currentUser } = useAuthStore();
+  const isSuperAdmin = !!currentUser?.isSuperAdmin;
   const isMobile = useIsMobile();
 
   // ── Restore state from sessionStorage on mount ─────────────────────────────
@@ -479,6 +482,17 @@ export default function CVDatabaseView() {
         </button>
       ),
     },
+    ...(isSuperAdmin ? [{
+      key: 'business',
+      label: 'Business',
+      width: 130,
+      render: (row: any) => row.business ? (
+        <button onClick={() => navigate('/business/' + row.businessId)}
+          className="text-xs text-primary-600 hover:underline">
+          {row.business.name}
+        </button>
+      ) : <span className="text-xs text-slate-400">—</span>,
+    }] : []),
   ];
 
   // ── Action buttons ────────────────────────────────────────────────────────
@@ -488,18 +502,23 @@ export default function CVDatabaseView() {
       label: 'View',
       onClick: (row: Candidate) => navigate(`/cv-database/${row.id}`),
     },
-    {
+    ...(canAccess('cv:download') ? [{
       icon: <Download size={14} />,
       label: 'Download CV',
       onClick: (row: Candidate) => handleDownload(row.id, row.cvOriginalName || `${row.firstName}_cv.pdf`),
       show: (row: Candidate) => !!row.cvFile,
-    },
-    {
+    }] : []),
+    ...(canAccess('cv:update') ? [{
+      icon: <Edit size={14} />,
+      label: 'Edit',
+      onClick: (row: Candidate) => navigate(`/cv-database/${row.id}/edit`),
+    }] : []),
+    ...(canAccess('cv:delete') ? [{
       icon: <Trash2 size={14} />,
       label: 'Delete',
       onClick: (row: Candidate) => setDeleteId(row.id),
       className: 'text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20',
-    },
+    }] : []),
   ];
 
   return (

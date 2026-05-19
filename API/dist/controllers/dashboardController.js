@@ -2,28 +2,37 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getRevenueChart = exports.getRecruitmentChart = exports.getDashboardStats = void 0;
 const app_1 = require("../app");
-const getDashboardStats = async (_req, res) => {
+const getDashboardStats = async (req, res) => {
+    const isSuperAdmin = req.user?.isSuperAdmin;
+    const businessId = req.user?.businessId;
+    const userId = req.user?.userId;
+    // Business-scoped filter (null for super admin = no filter)
+    const bizFilter = isSuperAdmin ? {} : (businessId ? { businessId } : {});
+    // Recent activity: super admin sees all, others see only their own
+    const activityWhere = isSuperAdmin ? {} : { userId };
     const [totalEmployees, activeEmployees, totalClients, activeClients, totalJobs, activeJobs, totalCandidates, priorityCandidates, invoiceStats, priorityJobs, recentActivities,] = await Promise.all([
-        app_1.prisma.user.count({ where: { isSuperAdmin: false } }),
-        app_1.prisma.user.count({ where: { isSuperAdmin: false, status: 'ACTIVE' } }),
-        app_1.prisma.client.count(),
-        app_1.prisma.client.count({ where: { isActive: true } }),
-        app_1.prisma.jobOpening.count(),
-        app_1.prisma.jobOpening.count({ where: { status: 'ACTIVE' } }),
-        app_1.prisma.candidate.count(),
-        app_1.prisma.candidate.count({ where: { isPriority: true } }),
+        app_1.prisma.user.count({ where: { isSuperAdmin: false, ...bizFilter } }),
+        app_1.prisma.user.count({ where: { isSuperAdmin: false, status: 'ACTIVE', ...bizFilter } }),
+        app_1.prisma.client.count({ where: { ...bizFilter } }),
+        app_1.prisma.client.count({ where: { isActive: true, ...bizFilter } }),
+        app_1.prisma.jobOpening.count({ where: { ...bizFilter } }),
+        app_1.prisma.jobOpening.count({ where: { status: 'ACTIVE', ...bizFilter } }),
+        app_1.prisma.candidate.count({ where: { ...bizFilter } }),
+        app_1.prisma.candidate.count({ where: { isPriority: true, ...bizFilter } }),
         app_1.prisma.invoice.groupBy({
             by: ['status'],
+            where: { ...bizFilter },
             _count: { id: true },
             _sum: { totalAmount: true },
         }),
         app_1.prisma.jobOpening.findMany({
-            where: { priority: { in: ['HIGH', 'URGENT'] }, status: 'ACTIVE' },
+            where: { priority: { in: ['HIGH', 'URGENT'] }, status: 'ACTIVE', ...bizFilter },
             include: { client: { select: { companyName: true } } },
             orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
             take: 10,
         }),
         app_1.prisma.auditLog.findMany({
+            where: activityWhere,
             orderBy: { createdAt: 'desc' },
             take: 10,
             include: { user: { select: { firstName: true, lastName: true, profilePhoto: true } } },
@@ -68,8 +77,9 @@ const getRecruitmentChart = async (req, res) => {
     const months = period === '12months' ? 12 : 6;
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - months);
+    const bizFilter = req.user?.isSuperAdmin ? {} : (req.user?.businessId ? { businessId: req.user.businessId } : {});
     const candidates = await app_1.prisma.candidate.findMany({
-        where: { createdAt: { gte: startDate } },
+        where: { createdAt: { gte: startDate }, ...bizFilter },
         select: { createdAt: true, status: true },
     });
     const chartData = {};
@@ -97,8 +107,9 @@ const getRevenueChart = async (req, res) => {
     const months = period === '12months' ? 12 : 6;
     const startDate = new Date();
     startDate.setMonth(startDate.getMonth() - months);
+    const bizFilter = req.user?.isSuperAdmin ? {} : (req.user?.businessId ? { businessId: req.user.businessId } : {});
     const invoices = await app_1.prisma.invoice.findMany({
-        where: { createdAt: { gte: startDate }, status: { in: ['PAID', 'SENT'] } },
+        where: { createdAt: { gte: startDate }, status: { in: ['PAID', 'SENT'] }, ...bizFilter },
         select: { createdAt: true, totalAmount: true, status: true },
     });
     const chartData = {};

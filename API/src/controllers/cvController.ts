@@ -7,14 +7,27 @@ import { paginate, buildPaginationMeta } from '../utils/helpers';
 import path from 'path';
 import fs from 'fs';
 
+const CV_SORT_FIELDS: Record<string, string> = {
+  name: 'firstName', status: 'status', currentLocation: 'currentLocation',
+  totalExperience: 'totalExperience', currentCTC: 'currentCTC',
+  isPriority: 'isPriority', createdAt: 'createdAt',
+};
+
 export const getCandidates = async (req: Request, res: Response) => {
   const {
     page = '1', limit = '10', search = '', gender, minExp, maxExp,
-    minCTC, maxCTC, location, qualification, status, isPriority,
+    minCTC, maxCTC, location, qualification, status, isPriority, sortBy, sortDir,
   } = req.query;
 
   const take = parseInt(limit as string);
   const pg = parseInt(page as string);
+
+  const prismaField = CV_SORT_FIELDS[sortBy as string];
+  const sortedOrderBy: any = prismaField
+    ? { [prismaField]: (sortDir === 'desc' ? 'desc' : 'asc') as 'asc' | 'desc' }
+    : [{ isPriority: 'desc' }, { createdAt: 'desc' }];
+
+  const bizFilter = req.user?.isSuperAdmin ? {} : (req.user?.businessId ? { businessId: req.user.businessId } : {});
 
   let candidates: any[] = [];
   let total = 0;
@@ -31,23 +44,26 @@ export const getCandidates = async (req: Request, res: Response) => {
     });
 
     if (ids.length > 0) {
-      const ordered = await prisma.candidate.findMany({ where: { id: { in: ids } } });
+      const ordered = await prisma.candidate.findMany({
+        where: { id: { in: ids } },
+        include: { business: { select: { id: true, name: true } } },
+      });
       candidates = ids.map((id) => ordered.find((c) => c.id === id)).filter(Boolean);
       total = esTotal;
     } else {
       // Fallback: MySQL FULLTEXT
-      const where = buildMySQLWhere(req.query);
+      const where = { ...buildMySQLWhere(req.query), ...bizFilter };
       const { skip } = paginate(pg, take);
       [candidates, total] = await Promise.all([
-        prisma.candidate.findMany({ where, skip, take, orderBy: [{ isPriority: 'desc' }, { createdAt: 'desc' }] }),
+        prisma.candidate.findMany({ where, skip, take, orderBy: sortedOrderBy, include: { business: { select: { id: true, name: true } } } }),
         prisma.candidate.count({ where }),
       ]);
     }
   } else {
-    const where = buildMySQLWhere(req.query);
+    const where = { ...buildMySQLWhere(req.query), ...bizFilter };
     const { skip } = paginate(pg, take);
     [candidates, total] = await Promise.all([
-      prisma.candidate.findMany({ where, skip, take, orderBy: [{ isPriority: 'desc' }, { createdAt: 'desc' }] }),
+      prisma.candidate.findMany({ where, skip, take, orderBy: sortedOrderBy, include: { business: { select: { id: true, name: true } } } }),
       prisma.candidate.count({ where }),
     ]);
   }
@@ -118,7 +134,7 @@ export const createCandidate = async (req: Request, res: Response) => {
     highestQualification, specialization, university, passingYear,
     educationDetails, experienceDetails,
     skills, certifications, technologyStack,
-    status, isPriority, source, notes, customFields,
+    status, isPriority, source, notes, customFields, businessId: bodyBusinessId,
   } = data;
 
   const candidate = await prisma.candidate.create({
@@ -150,6 +166,7 @@ export const createCandidate = async (req: Request, res: Response) => {
       cvOriginalName: cvFile?.originalname,
       searchVector,
       createdBy: req.user?.userId,
+      businessId: req.user?.isSuperAdmin ? (bodyBusinessId || undefined) : (req.user?.businessId ?? undefined),
     },
   });
 
@@ -206,6 +223,7 @@ export const updateCandidate = async (req: Request, res: Response) => {
     status: data.status as any || undefined,
     source: data.source,
     notes: data.notes,
+    ...(req.user?.isSuperAdmin && data.businessId ? { businessId: data.businessId } : {}),
   };
   // Remove undefined keys to avoid overwriting good data with undefined
   Object.keys(updates).forEach(k => updates[k] === undefined && delete updates[k]);

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { cvService } from '../../services/cvService';
 import { useAuthStore } from '../../stores/authStore';
+import BusinessSelector from '../../components/common/BusinessSelector';
 import toast from 'react-hot-toast';
 import { useDropzone } from 'react-dropzone';
 import { cn } from '../../utils/helpers';
@@ -482,7 +483,9 @@ export default function CVAddView() {
   const { canAccess, user } = useAuthStore();
   const isEdit = !!id;
 
-  const canAddDropdownOptions = user?.isSuperAdmin || canAccess('dropdown:manage_options');
+  const isSuperAdmin = user?.isSuperAdmin ?? false;
+  const canAddDropdownOptions = isSuperAdmin || canAccess('dropdown:manage_options');
+  const [selectedBusinessId, setSelectedBusinessId] = useState('');
 
   // Tag lists
   const [skills, setSkills] = useState<string[]>([]);
@@ -588,6 +591,7 @@ export default function CVAddView() {
     setTechStack(existingData.technologyStack || []);
     setLanguages(existingData.languages || []);
     setPreferredLocations(existingData.preferredLocations || []);
+    if (existingData.businessId) setSelectedBusinessId(existingData.businessId);
 
     const edu = existingData.educationDetails;
     if (Array.isArray(edu) && edu.length > 0) {
@@ -674,6 +678,7 @@ export default function CVAddView() {
     }
 
     if (cvFile) fd.append('cvFile', cvFile);
+    if (isSuperAdmin && selectedBusinessId) fd.append('businessId', selectedBusinessId);
 
     if (isEdit) updateMutation.mutate({ id: id!, fd });
     else createMutation.mutate(fd);
@@ -702,6 +707,11 @@ export default function CVAddView() {
         <h1 className="page-title">{isEdit ? 'Edit Candidate' : 'Add New Candidate'}</h1>
       </div>
 
+      {isSuperAdmin && (
+        <BusinessSelector value={selectedBusinessId} onChange={setSelectedBusinessId} className="mb-6" />
+      )}
+
+      {(!isSuperAdmin || selectedBusinessId) && (
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2 space-y-6">
@@ -1022,6 +1032,7 @@ export default function CVAddView() {
           </div>
         </div>
       </form>
+      )}
     </div>
   );
 }

@@ -17,7 +17,6 @@ import DynamicTable, { FixedColumn, ActionButton } from '../../components/common
 import { useAuthStore } from '../../stores/authStore';
 import toast from 'react-hot-toast';
 import { useDebounce } from '../../hooks/useDebounce';
-import Modal from '../../components/common/Modal';
 
 const QUERY_KEY = ['employees'];
 
@@ -196,13 +195,13 @@ export default function EmployeeListView() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { canAccess, user: currentUser } = useAuthStore();
+  const isSuperAdmin = !!currentUser?.isSuperAdmin;
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [resetPwId, setResetPwId] = useState<string | null>(null);
-  const [newPassword, setNewPassword] = useState('');
   const [sort, setSort] = useState({ field: '', dir: 'asc' as 'asc' | 'desc' });
   const [expandedEmployeeId, setExpandedEmployeeId] = useState<string | null>(null);
   const debouncedSearch = useDebounce(search, 400);
@@ -210,7 +209,10 @@ export default function EmployeeListView() {
   const { data, isLoading } = useQuery({
     queryKey: [...QUERY_KEY, page, limit, debouncedSearch, sort],
     queryFn: async () => {
-      const res = await employeeService.getEmployees({ page, limit, search: debouncedSearch });
+      const res = await employeeService.getEmployees({
+        page, limit, search: debouncedSearch,
+        ...(sort.field ? { sortBy: sort.field, sortDir: sort.dir } : {}),
+      });
       return res.data;
     },
   });
@@ -223,11 +225,6 @@ export default function EmployeeListView() {
   const deleteMutation = useMutation({
     mutationFn: employeeService.deleteEmployee,
     onSuccess: () => { toast.success('Employee deleted'); queryClient.invalidateQueries({ queryKey: QUERY_KEY }); setDeleteId(null); },
-  });
-
-  const resetPwMutation = useMutation({
-    mutationFn: employeeService.resetPassword,
-    onSuccess: (res) => setNewPassword(res.data.data?.newPassword || ''),
   });
 
   const handleExpandRow = useCallback((row: User) => {
@@ -322,6 +319,17 @@ export default function EmployeeListView() {
         <span className={cn('badge text-xs', getStatusColor(row.status))}>{row.status}</span>
       ),
     },
+    ...(isSuperAdmin ? [{
+      key: 'business',
+      label: 'Business',
+      width: 130,
+      render: (row: any) => row.business ? (
+        <button onClick={() => navigate('/business/' + row.businessId)}
+          className="text-xs text-primary-600 hover:underline">
+          {row.business.name}
+        </button>
+      ) : <span className="text-xs text-slate-400">—</span>,
+    }] : []),
   ];
 
   // ── Action buttons ────────────────────────────────────────────────────────
@@ -357,7 +365,7 @@ export default function EmployeeListView() {
     ...(canAccess('employees:delete') ? [{
       icon: <RefreshCw size={14} />,
       label: 'Reset Password',
-      onClick: (row: User) => { if (row.id !== currentUser?.id) { setResetPwId(row.id); resetPwMutation.mutate(row.id); } },
+      onClick: (row: User) => { if (row.id !== currentUser?.id) { setResetPwId(row.id); } },
       show: (row: User) => row.id !== currentUser?.id,
     }, {
       icon: <Trash2 size={14} />,
@@ -428,18 +436,17 @@ export default function EmployeeListView() {
         isLoading={deleteMutation.isPending}
       />
 
-      <Modal isOpen={!!newPassword} onClose={() => setNewPassword('')} title="Password Reset" size="sm">
-        <div className="text-center space-y-4">
-          <p className="text-sm text-slate-600 dark:text-slate-400">New temporary password:</p>
-          <div className="bg-slate-100 dark:bg-slate-700 rounded-lg p-3 font-mono text-lg font-bold text-slate-900 dark:text-white">
-            {newPassword}
-          </div>
-          <p className="text-xs text-slate-400">Please share this with the employee securely. They should change it after login.</p>
-          <button onClick={() => { navigator.clipboard.writeText(newPassword); toast.success('Copied!'); }} className="btn-secondary w-full justify-center">
-            Copy Password
-          </button>
-        </div>
-      </Modal>
+      {resetPwId && (() => {
+        const emp = employees.find(e => e.id === resetPwId);
+        return (
+          <ResetPasswordModal
+            isOpen
+            onClose={() => setResetPwId(null)}
+            employeeId={resetPwId}
+            employeeName={emp ? `${emp.firstName} ${emp.lastName}` : ''}
+          />
+        );
+      })()}
 
       {expandedEmployeeId && (
         <EmployeeQuickPanel id={expandedEmployeeId} onClose={() => setExpandedEmployeeId(null)} />

@@ -21,6 +21,9 @@ const employeeRoutes_1 = __importDefault(require("./routes/employeeRoutes"));
 const clientRoutes_1 = __importDefault(require("./routes/clientRoutes"));
 const invoiceRoutes_1 = __importDefault(require("./routes/invoiceRoutes"));
 const settingsRoutes_1 = __importDefault(require("./routes/settingsRoutes"));
+const userNotificationRoutes_1 = __importDefault(require("./routes/userNotificationRoutes"));
+const businessRoutes_1 = __importDefault(require("./routes/businessRoutes"));
+const bugReportRoutes_1 = __importDefault(require("./routes/bugReportRoutes"));
 const errorMiddleware_1 = require("./middleware/errorMiddleware");
 exports.prisma = new client_1.PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
@@ -37,13 +40,23 @@ app.use((0, cors_1.default)({
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-// Rate limiting
-const limiter = (0, express_rate_limit_1.default)({
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'),
-    max: parseInt(process.env.RATE_LIMIT_MAX || '100'),
+// Rate limiting — strict on auth, generous on general API
+const authLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 30, // 30 login/reset attempts per IP per 15 min
     message: { success: false, message: 'Too many requests, please try again later' },
+    standardHeaders: true,
+    legacyHeaders: false,
 });
-app.use('/api/', limiter);
+const apiLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 60 * 1000, // 1 minute
+    max: parseInt(process.env.RATE_LIMIT_MAX || '500'),
+    message: { success: false, message: 'Too many requests, please try again later' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+app.use('/api/auth/', authLimiter);
+app.use('/api/', apiLimiter);
 // Body parsing
 app.use((0, compression_1.default)());
 app.use(express_1.default.json({ limit: '10mb' }));
@@ -60,6 +73,9 @@ app.use('/api/employees', employeeRoutes_1.default);
 app.use('/api/clients', clientRoutes_1.default);
 app.use('/api/invoices', invoiceRoutes_1.default);
 app.use('/api/settings', settingsRoutes_1.default);
+app.use('/api/user-notifications', userNotificationRoutes_1.default);
+app.use('/api/businesses', businessRoutes_1.default);
+app.use('/api/bug-reports', bugReportRoutes_1.default);
 // Health check
 app.get('/api/health', (_req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString(), version: process.env.APP_VERSION });

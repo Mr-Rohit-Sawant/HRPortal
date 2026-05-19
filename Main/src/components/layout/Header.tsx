@@ -1,5 +1,6 @@
 import { Menu, Bell, Sun, Moon, Globe } from 'lucide-react';
-import { useState } from 'react';
+import CreateNotificationModal from '../../views/notifications/CreateNotificationModal';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useThemeStore } from '../../stores/themeStore';
@@ -7,6 +8,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { useLanguageStore } from '../../stores/languageStore';
 import { useQuery } from '@tanstack/react-query';
 import { settingsService } from '../../services/settingsService';
+import { notificationService } from '../../services/notificationService';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '../../utils/helpers';
 import { SUPPORTED_LANGUAGES } from '../../i18n';
@@ -23,23 +25,61 @@ export default function Header({ onMenuClick, title }: HeaderProps) {
   const { t } = useTranslation();
   const [notifOpen, setNotifOpen] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [createNotifOpen, setCreateNotifOpen] = useState(false);
   const navigate = useNavigate();
 
-  const { data: notifications, refetch } = useQuery({
+  const { data: sysNotifications, refetch: refetchSys } = useQuery({
     queryKey: ['notifications'],
     queryFn: async () => {
       const res = await settingsService.getNotifications();
       return res.data.data || [];
     },
+    refetchInterval: 60000,
+  });
+
+  const { data: userNotifsData, refetch: refetchUserNotifs } = useQuery({
+    queryKey: ['user-notifications-bell'],
+    queryFn: async () => {
+      const res = await notificationService.getAll({ type: 'received', limit: 20 });
+      return (res.data as any).data as any[] || [];
+    },
     refetchInterval: 30000,
   });
 
-  const unread = notifications?.filter((n: any) => !n.isRead).length || 0;
+  const userNotifs: any[] = userNotifsData ?? [];
 
-  const handleMarkAllRead = async () => {
-    await settingsService.markAllRead();
-    refetch();
+  const isReadByMe = (notif: any) => {
+    if (!user?.id) return true;
+    let readBy: string[] = [];
+    try {
+      const raw = notif.readBy;
+      readBy = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw) : []);
+    } catch { readBy = []; }
+    return readBy.includes(user.id);
   };
+
+  const sysUnread = (sysNotifications as any[] ?? []).filter((n: any) => !n.isRead).length;
+  const userUnread = userNotifs.filter(n => !isReadByMe(n)).length;
+  const unread = sysUnread + userUnread;
+
+  const handleMarkAllRead = useCallback(async () => {
+    await settingsService.markAllRead();
+    // Mark all received user notifications as read
+    await Promise.all(userNotifs.filter(n => !isReadByMe(n)).map(n => notificationService.markRead(n.id)));
+    refetchSys();
+    refetchUserNotifs();
+  }, [sysNotifications, userNotifs, refetchSys, refetchUserNotifs]);
+
+  const handleMarkOneRead = useCallback(async (id: string) => {
+    await notificationService.markRead(id);
+    refetchUserNotifs();
+  }, [refetchUserNotifs]);
+
+  const handleBellOpen = useCallback(() => {
+    const next = !notifOpen;
+    setNotifOpen(next);
+    setLangOpen(false);
+  }, [notifOpen]);
 
   const currentLang = SUPPORTED_LANGUAGES.find((l) => l.code === language) || SUPPORTED_LANGUAGES[0];
 
@@ -109,7 +149,7 @@ export default function Header({ onMenuClick, title }: HeaderProps) {
         {/* Notifications */}
         <div className="relative">
           <button
-            onClick={() => { setNotifOpen(!notifOpen); setLangOpen(false); }}
+            onClick={handleBellOpen}
             className="relative p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400"
           >
             <Bell size={18} />
@@ -131,25 +171,61 @@ export default function Header({ onMenuClick, title }: HeaderProps) {
                 )}
               </div>
               <div className="max-h-80 overflow-y-auto">
-                {!notifications?.length ? (
+                {userNotifs.length === 0 && !(sysNotifications as any[])?.length ? (
                   <p className="text-center text-slate-400 text-sm py-8">{t('common.noData')}</p>
                 ) : (
-                  notifications.map((n: any) => (
-                    <div
-                      key={n.id}
-                      className={cn(
-                        'px-4 py-3 border-b border-slate-100 dark:border-slate-700 last:border-0',
-                        !n.isRead && 'bg-primary-50 dark:bg-primary-900/20'
-                      )}
-                    >
-                      <p className="text-sm font-medium text-slate-900 dark:text-white">{n.title}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{n.message}</p>
-                      <p className="text-xs text-slate-400 mt-1">
-                        {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
-                      </p>
-                    </div>
-                  ))
+                  <>
+                    {userNotifs.map((n: any) => {
+                      const read = isReadByMe(n);
+                      return (
+                        <div
+                          key={`u-${n.id}`}
+                          onClick={() => !read && handleMarkOneRead(n.id)}
+                          className={cn(
+                            'px-4 py-3 border-b border-slate-100 dark:border-slate-700 last:border-0 transition-colors',
+                            !read ? 'bg-primary-50 dark:bg-primary-900/20 cursor-pointer hover:bg-primary-100 dark:hover:bg-primary-900/30' : 'hover:bg-slate-50 dark:hover:bg-slate-700/20'
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm font-medium text-slate-900 dark:text-white">{n.title}</p>
+                            {!read && <span className="w-2 h-2 rounded-full bg-primary-500 flex-shrink-0 mt-1.5" />}
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.description}</p>
+                          <p className="text-xs text-slate-400 mt-1">
+                            {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                            {n.createdBy && <span className="ml-1">· {n.createdBy.firstName} {n.createdBy.lastName}</span>}
+                          </p>
+                        </div>
+                      );
+                    })}
+                    {(sysNotifications as any[] ?? []).map((n: any) => (
+                      <div
+                        key={`s-${n.id}`}
+                        className={cn('px-4 py-3 border-b border-slate-100 dark:border-slate-700 last:border-0', !n.isRead && 'bg-primary-50 dark:bg-primary-900/20')}
+                      >
+                        <p className="text-sm font-medium text-slate-900 dark:text-white">{n.title}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{n.message}</p>
+                        <p className="text-xs text-slate-400 mt-1">
+                          {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                        </p>
+                      </div>
+                    ))}
+                  </>
                 )}
+              </div>
+              <div className="border-t border-slate-200 dark:border-slate-700 px-4 py-2.5 flex items-center justify-between">
+                <button
+                  onClick={() => { setNotifOpen(false); setCreateNotifOpen(true); }}
+                  className="text-xs text-primary-600 hover:underline"
+                >
+                  + Create
+                </button>
+                <button
+                  onClick={() => { setNotifOpen(false); navigate('/notifications'); }}
+                  className="text-xs text-primary-600 hover:underline"
+                >
+                  View all →
+                </button>
               </div>
             </div>
           )}
@@ -176,6 +252,9 @@ export default function Header({ onMenuClick, title }: HeaderProps) {
       {(notifOpen || langOpen) && (
         <div className="fixed inset-0 z-40" onClick={() => { setNotifOpen(false); setLangOpen(false); }} />
       )}
+
+
+      <CreateNotificationModal isOpen={createNotifOpen} onClose={() => setCreateNotifOpen(false)} />
     </header>
   );
 }

@@ -15,7 +15,7 @@ const login = async (req, res) => {
     console.log('LOGIN ATTEMPT:', { email, passwordLen: password?.length });
     const user = await app_1.prisma.user.findFirst({
         where: { OR: [{ email }, { username: email }] },
-        include: { role: true },
+        include: { role: { include: { permissions: { include: { permission: true } } } } },
     });
     console.log('USER FOUND:', !!user, user?.status);
     if (user) {
@@ -62,10 +62,11 @@ const login = async (req, res) => {
         },
     });
     (0, helpers_1.setAuthCookies)(res, accessToken, refreshToken, !!rememberMe);
+    const permissions = user.role.permissions.map((rp) => `${rp.permission.module}:${rp.permission.action}`);
     res.json({
         success: true,
         message: 'Login successful',
-        data: { user: (0, helpers_1.sanitizeUser)({ ...user, role: user.role }) },
+        data: { user: { ...(0, helpers_1.sanitizeUser)({ ...user, role: user.role }), permissions } },
     });
 };
 exports.login = login;

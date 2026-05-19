@@ -18,6 +18,7 @@ export default function JobOpeningDetailView() {
 
   const onRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['job', id] });
+    queryClient.invalidateQueries({ queryKey: ['jobs'] });
   }, [id, queryClient]);
 
   if (isLoading) {

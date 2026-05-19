@@ -13,7 +13,8 @@ export const getInvoices = async (req: Request, res: Response) => {
   const pg = parseInt(page as string);
   const { skip } = paginate(pg, take);
 
-  const where: any = {};
+  const bizFilter = req.user?.isSuperAdmin ? {} : (req.user?.businessId ? { businessId: req.user.businessId } : {});
+  const where: any = { ...bizFilter };
   if (status) where.status = status;
   if (clientId) where.clientId = clientId as string;
   if (startDate || endDate) {
@@ -34,7 +35,10 @@ export const getInvoices = async (req: Request, res: Response) => {
       skip,
       take,
       orderBy: { createdAt: 'desc' },
-      include: { client: { select: { id: true, companyName: true, email: true } } },
+      include: {
+        client: { select: { id: true, companyName: true, email: true } },
+        business: { select: { id: true, name: true } },
+      },
     }),
     prisma.invoice.count({ where }),
   ]);
@@ -55,7 +59,7 @@ export const getInvoiceById = async (req: Request, res: Response) => {
 export const createInvoice = async (req: Request, res: Response) => {
   const {
     clientId, dueDate, serviceDescription, lineItems,
-    cgstRate, sgstRate, igstRate, notes, gstType,
+    cgstRate, sgstRate, igstRate, notes, gstType, businessId: bodyBusinessId,
   } = req.body;
 
   // Get invoice number
@@ -141,6 +145,7 @@ export const createInvoice = async (req: Request, res: Response) => {
       pdfPath,
       status: 'DRAFT',
       createdBy: req.user?.userId,
+      businessId: req.user?.isSuperAdmin ? (bodyBusinessId || undefined) : (req.user?.businessId ?? undefined),
     },
     include: { client: true },
   });

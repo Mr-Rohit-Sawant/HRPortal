@@ -27,6 +27,8 @@ router.put('/columns/:id', (0, authMiddleware_1.requirePermission)('columns', 'm
 router.delete('/columns/:id', (0, authMiddleware_1.requirePermission)('columns', 'manage'), settingsController_1.deleteColumnDefinition);
 // Audit Logs
 router.get('/audit', (0, authMiddleware_1.requirePermission)('audit', 'view'), settingsController_1.getAuditLogs);
+// Custom field file upload
+router.post('/upload-custom-files', uploadMiddleware_1.uploadCustomFiles.array('files', 20), settingsController_1.uploadCustomFieldFiles);
 // Notifications
 router.get('/notifications', settingsController_1.getNotifications);
 router.patch('/notifications/:id/read', settingsController_1.markNotificationRead);

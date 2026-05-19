@@ -11,10 +11,20 @@ const searchService_1 = require("../services/searchService");
 const helpers_1 = require("../utils/helpers");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
+const CV_SORT_FIELDS = {
+    name: 'firstName', status: 'status', currentLocation: 'currentLocation',
+    totalExperience: 'totalExperience', currentCTC: 'currentCTC',
+    isPriority: 'isPriority', createdAt: 'createdAt',
+};
 const getCandidates = async (req, res) => {
-    const { page = '1', limit = '10', search = '', gender, minExp, maxExp, minCTC, maxCTC, location, qualification, status, isPriority, } = req.query;
+    const { page = '1', limit = '10', search = '', gender, minExp, maxExp, minCTC, maxCTC, location, qualification, status, isPriority, sortBy, sortDir, } = req.query;
     const take = parseInt(limit);
     const pg = parseInt(page);
+    const prismaField = CV_SORT_FIELDS[sortBy];
+    const sortedOrderBy = prismaField
+        ? { [prismaField]: (sortDir === 'desc' ? 'desc' : 'asc') }
+        : [{ isPriority: 'desc' }, { createdAt: 'desc' }];
+    const bizFilter = req.user?.isSuperAdmin ? {} : (req.user?.businessId ? { businessId: req.user.businessId } : {});
     let candidates = [];
     let total = 0;
     if (search) {
@@ -28,25 +38,28 @@ const getCandidates = async (req, res) => {
             take,
         });
         if (ids.length > 0) {
-            const ordered = await app_1.prisma.candidate.findMany({ where: { id: { in: ids } } });
+            const ordered = await app_1.prisma.candidate.findMany({
+                where: { id: { in: ids } },
+                include: { business: { select: { id: true, name: true } } },
+            });
             candidates = ids.map((id) => ordered.find((c) => c.id === id)).filter(Boolean);
             total = esTotal;
         }
         else {
             // Fallback: MySQL FULLTEXT
-            const where = buildMySQLWhere(req.query);
+            const where = { ...buildMySQLWhere(req.query), ...bizFilter };
             const { skip } = (0, helpers_1.paginate)(pg, take);
             [candidates, total] = await Promise.all([
-                app_1.prisma.candidate.findMany({ where, skip, take, orderBy: [{ isPriority: 'desc' }, { createdAt: 'desc' }] }),
+                app_1.prisma.candidate.findMany({ where, skip, take, orderBy: sortedOrderBy, include: { business: { select: { id: true, name: true } } } }),
                 app_1.prisma.candidate.count({ where }),
             ]);
         }
     }
     else {
-        const where = buildMySQLWhere(req.query);
+        const where = { ...buildMySQLWhere(req.query), ...bizFilter };
         const { skip } = (0, helpers_1.paginate)(pg, take);
         [candidates, total] = await Promise.all([
-            app_1.prisma.candidate.findMany({ where, skip, take, orderBy: [{ isPriority: 'desc' }, { createdAt: 'desc' }] }),
+            app_1.prisma.candidate.findMany({ where, skip, take, orderBy: sortedOrderBy, include: { business: { select: { id: true, name: true } } } }),
             app_1.prisma.candidate.count({ where }),
         ]);
     }
@@ -112,7 +125,7 @@ const createCandidate = async (req, res) => {
     const cvFile = req.file;
     const searchVector = (0, cvParserService_1.buildSearchVector)(data);
     // Strip any unknown keys that would cause Prisma to throw
-    const { firstName, lastName, email, phone, alternatePhone, gender, dateOfBirth, currentLocation, preferredLocations, religion, caste, languages, nationality, country, state, city, currentDesignation, currentCompany, totalExperience, currentCTC, expectedCTC, noticePeriod, currentlyEmployed, highestQualification, specialization, university, passingYear, educationDetails, experienceDetails, skills, certifications, technologyStack, status, isPriority, source, notes, customFields, } = data;
+    const { firstName, lastName, email, phone, alternatePhone, gender, dateOfBirth, currentLocation, preferredLocations, religion, caste, languages, nationality, country, state, city, currentDesignation, currentCompany, totalExperience, currentCTC, expectedCTC, noticePeriod, currentlyEmployed, highestQualification, specialization, university, passingYear, educationDetails, experienceDetails, skills, certifications, technologyStack, status, isPriority, source, notes, customFields, businessId: bodyBusinessId, } = data;
     const candidate = await app_1.prisma.candidate.create({
         data: {
             firstName, lastName, email, phone, alternatePhone,
@@ -142,6 +155,7 @@ const createCandidate = async (req, res) => {
             cvOriginalName: cvFile?.originalname,
             searchVector,
             createdBy: req.user?.userId,
+            businessId: req.user?.isSuperAdmin ? (bodyBusinessId || undefined) : (req.user?.businessId ?? undefined),
         },
     });
     await (0, searchService_1.indexCandidate)(candidate);
@@ -194,6 +208,7 @@ const updateCandidate = async (req, res) => {
         status: data.status || undefined,
         source: data.source,
         notes: data.notes,
+        ...(req.user?.isSuperAdmin && data.businessId ? { businessId: data.businessId } : {}),
     };
     // Remove undefined keys to avoid overwriting good data with undefined
     Object.keys(updates).forEach(k => updates[k] === undefined && delete updates[k]);

@@ -5,6 +5,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Plus, X, Save, Briefcase, User } from 'lucide-react';
 import { invoiceService } from '../../services/invoiceService';
 import { clientService } from '../../services/clientService';
+import { useAuthStore } from '../../stores/authStore';
+import BusinessSelector from '../../components/common/BusinessSelector';
 import { formatCurrency } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 
@@ -14,6 +16,9 @@ export default function GenerateInvoiceView() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
+  const { user } = useAuthStore();
+  const isSuperAdmin = user?.isSuperAdmin ?? false;
+  const [selectedBusinessId, setSelectedBusinessId] = useState('');
 
   const prefillClientId = searchParams.get('clientId') || '';
   const prefillJobTitle = searchParams.get('jobTitle') || '';
@@ -74,6 +79,7 @@ export default function GenerateInvoiceView() {
       sgstRate: gstType === 'CGST_SGST' ? halfRate : undefined,
       igstRate: gstType === 'IGST' ? taxRate : undefined,
       notes: data.notes || undefined,
+      ...(isSuperAdmin && selectedBusinessId ? { businessId: selectedBusinessId } : {}),
     });
   };
 
@@ -108,6 +114,11 @@ export default function GenerateInvoiceView() {
         </div>
       )}
 
+      {isSuperAdmin && (
+        <BusinessSelector value={selectedBusinessId} onChange={setSelectedBusinessId} className="mb-6" />
+      )}
+
+      {(!isSuperAdmin || selectedBusinessId) && (
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2 space-y-5">
@@ -260,6 +271,7 @@ export default function GenerateInvoiceView() {
           </div>
         </div>
       </form>
+      )}
     </div>
   );
 }

@@ -83,23 +83,27 @@ export default function ResetPasswordModal({ isOpen, onClose, employeeId, employ
         </p>
 
         {/* Generate toggle */}
-        <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+        <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Generate Password</p>
             <p className="text-xs text-slate-400 mt-0.5">Auto-create a strong random password</p>
           </div>
           <button
             type="button"
+            role="switch"
+            aria-checked={generateMode}
             onClick={() => setGenerateMode((v) => !v)}
             className={cn(
-              'relative w-11 h-6 rounded-full transition-colors flex-shrink-0',
+              'relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500',
               generateMode ? 'bg-primary-500' : 'bg-slate-300 dark:bg-slate-600',
             )}
           >
-            <span className={cn(
-              'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform',
-              generateMode ? 'translate-x-5' : 'translate-x-0.5',
-            )} />
+            <span
+              className={cn(
+                'pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out',
+                generateMode ? 'translate-x-5' : 'translate-x-0',
+              )}
+            />
           </button>
         </div>
 

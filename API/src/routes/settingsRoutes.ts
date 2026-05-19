@@ -4,9 +4,10 @@ import {
   getRoles, createRole, updateRole, deleteRole, cloneRole, getPermissions,
   getColumnDefinitions, upsertColumnDefinition, deleteColumnDefinition, reorderColumns,
   getAuditLogs, getNotifications, markNotificationRead, markAllNotificationsRead,
+  uploadCustomFieldFiles,
 } from '../controllers/settingsController';
 import { authenticate, requirePermission, requireSuperAdmin } from '../middleware/authMiddleware';
-import { uploadLogo as uploadLogoMiddleware, uploadFont as uploadFontMiddleware } from '../middleware/uploadMiddleware';
+import { uploadLogo as uploadLogoMiddleware, uploadFont as uploadFontMiddleware, uploadCustomFiles } from '../middleware/uploadMiddleware';
 
 const router = Router();
 
@@ -36,6 +37,9 @@ router.delete('/columns/:id', requirePermission('columns', 'manage'), deleteColu
 
 // Audit Logs
 router.get('/audit', requirePermission('audit', 'view'), getAuditLogs);
+
+// Custom field file upload
+router.post('/upload-custom-files', uploadCustomFiles.array('files', 20), uploadCustomFieldFiles);
 
 // Notifications
 router.get('/notifications', getNotifications);

@@ -1,15 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateCustomFields = exports.importJobsCSV = exports.removeCandidateFromRound = exports.addCandidateToRound = exports.updatePSRColumns = exports.uploadOfferLetter = exports.updatePostSelectionRecord = exports.startReplacement = exports.closeJob = exports.toggleJobAssignee = exports.bulkUpdateSlots = exports.updateSlotCustomField = exports.updateRoundColumns = exports.renameRound = exports.updateSlot = exports.addRound = exports.deleteJob = exports.updateJob = exports.createJob = exports.getJobById = exports.getJobs = void 0;
+exports.updateCustomFields = exports.importJobsCSV = exports.removeCandidateFromRound = exports.addCandidateToRound = exports.updatePSRColumns = exports.uploadOfferLetter = exports.updatePostSelectionRecord = exports.startReplacement = exports.closeJob = exports.toggleJobAssignee = exports.bulkUpdateSlots = exports.updateSlotCustomField = exports.updateRoundColumns = exports.renameRound = exports.updateSlot = exports.addRound = exports.deleteJob = exports.duplicateJob = exports.updateJob = exports.createJob = exports.getJobById = exports.getJobs = void 0;
 const app_1 = require("../app");
 const errorMiddleware_1 = require("../middleware/errorMiddleware");
 const helpers_1 = require("../utils/helpers");
+const JOB_SORT_FIELDS = {
+    jobTitle: 'jobTitle', status: 'status', priority: 'priority',
+    workLocation: 'workLocation', closingDate: 'closingDate', createdAt: 'createdAt',
+};
 const getJobs = async (req, res) => {
-    const { page = '1', limit = '10', search, status, priority, clientId, assigneeId, location } = req.query;
+    const { page = '1', limit = '10', search, status, priority, clientId, assigneeId, assigneeIds, location, sortBy, sortDir } = req.query;
     const take = parseInt(limit);
     const pg = parseInt(page);
     const { skip } = (0, helpers_1.paginate)(pg, take);
-    const where = {};
+    const bizFilter = req.user?.isSuperAdmin ? {} : (req.user?.businessId ? { businessId: req.user.businessId } : {});
+    const where = { ...bizFilter };
     if (status)
         where.status = status;
     if (priority)
@@ -18,8 +23,14 @@ const getJobs = async (req, res) => {
         where.clientId = clientId;
     if (location)
         where.workLocation = { contains: location };
-    if (assigneeId)
+    if (assigneeIds) {
+        const ids = assigneeIds.split(',').filter(Boolean);
+        if (ids.length > 0)
+            where.assignees = { some: { id: { in: ids } } };
+    }
+    else if (assigneeId) {
         where.assignees = { some: { id: assigneeId } };
+    }
     if (search) {
         where.OR = [
             { jobTitle: { contains: search } },
@@ -28,16 +39,21 @@ const getJobs = async (req, res) => {
             { client: { companyName: { contains: search } } },
         ];
     }
+    const prismaField = JOB_SORT_FIELDS[sortBy];
+    const orderBy = prismaField
+        ? { [prismaField]: (sortDir === 'desc' ? 'desc' : 'asc') }
+        : [{ status: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }];
     const [jobs, total] = await Promise.all([
         app_1.prisma.jobOpening.findMany({
             where,
             skip,
             take,
-            orderBy: [{ status: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }],
+            orderBy,
             include: {
                 client: { select: { id: true, companyName: true } },
                 assignees: { select: { id: true, firstName: true, lastName: true, profilePhoto: true } },
                 _count: { select: { applications: true, rounds: true } },
+                business: { select: { id: true, name: true } },
             },
         }),
         app_1.prisma.jobOpening.count({ where }),
@@ -86,7 +102,7 @@ const getJobById = async (req, res) => {
 };
 exports.getJobById = getJobById;
 const createJob = async (req, res) => {
-    const { jobTitle, clientId, description, requiredSkills, preferredSkills, experienceMin, experienceMax, salaryMin, salaryMax, jobType, workLocation, workMode, numberOfOpenings, status, priority, closingDate, tags, customFields, assigneeIds, } = req.body;
+    const { jobTitle, clientId, description, requiredSkills, preferredSkills, experienceMin, experienceMax, salaryMin, salaryMax, jobType, workLocation, workMode, numberOfOpenings, status, priority, closingDate, tags, customFields, assigneeIds, businessId: bodyBusinessId, } = req.body;
     const jdDocument = req.file ? `uploads/documents/${req.file.filename}` : null;
     const job = await app_1.prisma.jobOpening.create({
         data: {
@@ -110,6 +126,7 @@ const createJob = async (req, res) => {
             tags: tags ? JSON.parse(tags) : null,
             customFields: customFields ? JSON.parse(customFields) : null,
             createdBy: req.user?.userId,
+            businessId: req.user?.isSuperAdmin ? (bodyBusinessId || undefined) : (req.user?.businessId ?? undefined),
             assignees: assigneeIds ? { connect: JSON.parse(assigneeIds).map((id) => ({ id })) } : undefined,
         },
         include: { client: true, assignees: { select: { id: true, firstName: true, lastName: true } } },
@@ -146,6 +163,29 @@ const updateJob = async (req, res) => {
     res.json({ success: true, message: 'Job updated', data: job });
 };
 exports.updateJob = updateJob;
+const duplicateJob = async (req, res) => {
+    const { id } = req.params;
+    const original = await app_1.prisma.jobOpening.findUniqueOrThrow({
+        where: { id },
+        include: { assignees: { select: { id: true } } },
+    });
+    const { id: _id, createdAt, updatedAt, assignees, ...fields } = original;
+    const copy = await app_1.prisma.jobOpening.create({
+        data: {
+            ...fields,
+            jobTitle: `${original.jobTitle} (Copy)`,
+            status: 'DRAFT',
+            createdBy: req.user?.userId,
+            assignees: assignees.length ? { connect: assignees.map((a) => ({ id: a.id })) } : undefined,
+        },
+        include: { client: true, assignees: { select: { id: true, firstName: true, lastName: true } } },
+    });
+    await app_1.prisma.auditLog.create({
+        data: { userId: req.user?.userId, userEmail: req.user?.email, action: 'CREATE', module: 'jobs', recordId: copy.id },
+    });
+    res.status(201).json({ success: true, message: 'Job duplicated', data: copy });
+};
+exports.duplicateJob = duplicateJob;
 const deleteJob = async (req, res) => {
     const { id } = req.params;
     await app_1.prisma.jobOpening.findUniqueOrThrow({ where: { id } });

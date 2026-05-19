@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Save } from 'lucide-react';
 import { clientService } from '../../services/clientService';
+import { useAuthStore } from '../../stores/authStore';
+import BusinessSelector from '../../components/common/BusinessSelector';
 import toast from 'react-hot-toast';
 import SmartSelect from '../../components/common/SmartSelect';
 import PhoneInput from '../../components/common/PhoneInput';
@@ -38,6 +40,9 @@ export default function AddClientView() {
   const { id } = useParams();
   const queryClient = useQueryClient();
   const isEdit = !!id;
+  const { user } = useAuthStore();
+  const isSuperAdmin = user?.isSuperAdmin ?? false;
+  const [selectedBusinessId, setSelectedBusinessId] = useState('');
   const [extraCountries, setExtraCountries] = useState<string[]>([]);
   const [extraStates, setExtraStates] = useState<string[]>([]);
   const [extraCities, setExtraCities] = useState<string[]>([]);
@@ -77,6 +82,7 @@ export default function AddClientView() {
         contractEndDate: existing.contractEndDate?.split('T')[0] || '',
         notes: existing.notes || '',
       });
+      if (existing.businessId) setSelectedBusinessId(existing.businessId);
     }
   }, [existing, reset]);
 
@@ -103,8 +109,9 @@ export default function AddClientView() {
   });
 
   const onSubmit = (data: FormData) => {
-    if (isEdit) updateMutation.mutate(data);
-    else createMutation.mutate(data);
+    const payload: any = isSuperAdmin && selectedBusinessId ? { ...data, businessId: selectedBusinessId } : data;
+    if (isEdit) updateMutation.mutate(payload);
+    else createMutation.mutate(payload);
   };
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
@@ -128,6 +135,11 @@ export default function AddClientView() {
         <h1 className="page-title">{isEdit ? 'Edit Client' : 'Add Client'}</h1>
       </div>
 
+      {isSuperAdmin && (
+        <BusinessSelector value={selectedBusinessId} onChange={setSelectedBusinessId} className="mb-6 max-w-3xl" />
+      )}
+
+      {(!isSuperAdmin || selectedBusinessId) && (
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-3xl space-y-6">
         <div className="card p-6">
           <h2 className="font-semibold text-slate-900 dark:text-white mb-4">Company Information</h2>
@@ -279,6 +291,7 @@ export default function AddClientView() {
           <button type="button" onClick={() => navigate('/clients')} className="btn-secondary">Cancel</button>
         </div>
       </form>
+      )}
     </div>
   );
 }

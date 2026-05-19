@@ -16,7 +16,8 @@ const getInvoices = async (req, res) => {
     const take = parseInt(limit);
     const pg = parseInt(page);
     const { skip } = (0, helpers_1.paginate)(pg, take);
-    const where = {};
+    const bizFilter = req.user?.isSuperAdmin ? {} : (req.user?.businessId ? { businessId: req.user.businessId } : {});
+    const where = { ...bizFilter };
     if (status)
         where.status = status;
     if (clientId)
@@ -40,7 +41,10 @@ const getInvoices = async (req, res) => {
             skip,
             take,
             orderBy: { createdAt: 'desc' },
-            include: { client: { select: { id: true, companyName: true, email: true } } },
+            include: {
+                client: { select: { id: true, companyName: true, email: true } },
+                business: { select: { id: true, name: true } },
+            },
         }),
         app_1.prisma.invoice.count({ where }),
     ]);
@@ -59,7 +63,7 @@ const getInvoiceById = async (req, res) => {
 };
 exports.getInvoiceById = getInvoiceById;
 const createInvoice = async (req, res) => {
-    const { clientId, dueDate, serviceDescription, lineItems, cgstRate, sgstRate, igstRate, notes, gstType, } = req.body;
+    const { clientId, dueDate, serviceDescription, lineItems, cgstRate, sgstRate, igstRate, notes, gstType, businessId: bodyBusinessId, } = req.body;
     // Get invoice number
     const counterSetting = await app_1.prisma.appSetting.findUnique({ where: { key: 'invoice_counter' } });
     const prefixSetting = await app_1.prisma.appSetting.findUnique({ where: { key: 'invoice_prefix' } });
@@ -136,6 +140,7 @@ const createInvoice = async (req, res) => {
             pdfPath,
             status: 'DRAFT',
             createdBy: req.user?.userId,
+            businessId: req.user?.isSuperAdmin ? (bodyBusinessId || undefined) : (req.user?.businessId ?? undefined),
         },
         include: { client: true },
     });

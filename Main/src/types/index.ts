@@ -43,6 +43,8 @@ export interface User {
   permissions?: string[];
   lastLoginAt?: string;
   createdAt: string;
+  businessId?: string;
+  business?: { id: string; name: string };
 }
 
 export interface LoginCredentials {
@@ -122,6 +124,8 @@ export interface Candidate {
   customFields?: Record<string, any>;
   createdAt: string;
   updatedAt: string;
+  businessId?: string;
+  business?: { id: string; name: string };
 }
 
 export interface EducationDetail {
@@ -154,6 +158,8 @@ export interface Client {
   notes?: string;
   createdAt: string;
   _count?: { jobOpenings: number; invoices: number };
+  businessId?: string;
+  business?: { id: string; name: string };
 }
 
 // Job Openings
@@ -186,6 +192,8 @@ export interface JobOpening {
   rounds?: InterviewRound[];
   _count?: { applications: number; rounds: number };
   createdAt: string;
+  businessId?: string;
+  business?: { id: string; name: string };
 }
 
 export interface InterviewRound {

@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   LayoutDashboard, Users, Briefcase, FileText, Building2,
   Receipt, Settings, LogOut, ChevronDown, ChevronRight,
-  Palette, Shield, Type, ClipboardList, X, Globe,
+  Palette, Shield, Type, ClipboardList, X, Globe, Bug,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -41,8 +41,11 @@ export default function Sidebar({ isOpen, collapsed, onClose }: SidebarProps) {
     },
   });
 
+  const isSuperAdmin = !!user?.isSuperAdmin;
+
   const navItems = [
     { labelKey: 'nav.dashboard',  icon: <LayoutDashboard size={18} />, path: '/dashboard',    permission: 'dashboard:view' },
+    ...(isSuperAdmin ? [{ labelKey: 'Business', icon: <Building2 size={18} />, path: '/business', permission: undefined as string | undefined }] : []),
     { labelKey: 'nav.cvDatabase', icon: <FileText size={18} />,        path: '/cv-database',  permission: 'cv:view' },
     { labelKey: 'nav.jobOpenings',icon: <Briefcase size={18} />,       path: '/job-openings', permission: 'jobs:view' },
     { labelKey: 'nav.employees',  icon: <Users size={18} />,           path: '/employees',    permission: 'employees:view' },
@@ -57,6 +60,7 @@ export default function Sidebar({ isOpen, collapsed, onClose }: SidebarProps) {
         { labelKey: 'settings.fonts',     path: '/settings/fonts',     icon: <Type size={15} />,          permission: 'settings:fonts' },
         { labelKey: 'settings.auditLogs', path: '/settings/audit',     icon: <ClipboardList size={15} />, permission: 'audit:view' },
         { labelKey: 'settings.languages', path: '/settings/languages', icon: <Globe size={15} />,         permission: 'settings:view' },
+        ...(isSuperAdmin ? [{ labelKey: 'Bug Reports', path: '/settings/bug-reports', icon: <Bug size={15} />, permission: undefined as string | undefined }] : []),
       ],
     },
   ];

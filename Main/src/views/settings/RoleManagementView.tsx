@@ -1,11 +1,22 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Edit, Trash2, Copy, Shield, ChevronDown, ChevronRight } from 'lucide-react';
 import { settingsService } from '../../services/settingsService';
+import { notificationService } from '../../services/notificationService';
 import { useAuthStore } from '../../stores/authStore';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import Modal from '../../components/common/Modal';
 import toast from 'react-hot-toast';
+
+const DELAY_OPTIONS = [
+  { value: 'never_expire', label: 'Never Expire' },
+  { value: 'not_allowed', label: 'Not Allowed' },
+  { value: '1h', label: '1 Hour' },
+  { value: '8h', label: '8 Hours' },
+  { value: '24h', label: '24 Hours' },
+  { value: '7d', label: '7 Days' },
+  { value: '30d', label: '30 Days' },
+];
 
 interface Permission { id: string; module: string; action: string; }
 interface Role { id: string; name: string; isSystem: boolean; permissions: { permission: Permission }[] | undefined; }
@@ -22,7 +33,7 @@ const ACTION_LABELS: Record<string, string> = {
   bulk_import: 'Bulk Import', download: 'Download', toggle_status: 'Toggle Status',
   send_email: 'Send Email', theme: 'Manage Theme', roles: 'Manage Roles',
   fonts: 'Manage Fonts', manage: 'Manage Columns', manage_options: 'Manage Dropdown Options',
-  manage_roles: 'Manage Roles',
+  manage_roles: 'Manage Roles', view_contacts: 'View Contact Details',
 };
 
 export default function RoleManagementView() {
@@ -36,6 +47,8 @@ export default function RoleManagementView() {
   const [newRoleName, setNewRoleName] = useState('');
   const [selectedPermIds, setSelectedPermIds] = useState<Set<string>>(new Set());
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set(Object.keys(MODULE_LABELS)));
+  const [notifEditDelay, setNotifEditDelay] = useState('never_expire');
+  const [notifDeleteDelay, setNotifDeleteDelay] = useState('never_expire');
 
   const { data: rolesData } = useQuery({
     queryKey: ['roles'],
@@ -47,6 +60,11 @@ export default function RoleManagementView() {
     queryFn: async () => { const res = await settingsService.getPermissions(); return res.data.data || []; },
   });
 
+  const { data: notifPermsData } = useQuery({
+    queryKey: ['notification-permissions'],
+    queryFn: async () => { const res = await notificationService.getPermissions(); return (res.data as any).data; },
+  });
+
   const roles: Role[] = (rolesData || []) as unknown as Role[];
   const permissions: Permission[] = permsData || [];
 
@@ -55,6 +73,14 @@ export default function RoleManagementView() {
     acc[p.module].push(p);
     return acc;
   }, {});
+
+  // Initialise delay dropdowns when opening edit for a specific role
+  useEffect(() => {
+    if (!editModal || !selectedRole || !notifPermsData) return;
+    const roleName = selectedRole.name;
+    setNotifEditDelay((notifPermsData?.edit?.delays as Record<string, string>)?.[roleName] ?? 'never_expire');
+    setNotifDeleteDelay((notifPermsData?.delete?.delays as Record<string, string>)?.[roleName] ?? 'never_expire');
+  }, [editModal, selectedRole, notifPermsData]);
 
   const openEdit = (role?: Role) => {
     if (role) {
@@ -65,8 +91,22 @@ export default function RoleManagementView() {
       setSelectedRole(null);
       setNewRoleName('');
       setSelectedPermIds(new Set());
+      setNotifEditDelay('never_expire');
+      setNotifDeleteDelay('never_expire');
     }
     setEditModal(true);
+  };
+
+  const saveNotifDelays = async (roleName: string) => {
+    if (!isSuperAdmin) return;
+    const current = notifPermsData ?? { edit: { delays: {} }, delete: { delays: {} } };
+    const updated = {
+      ...current,
+      edit: { delays: { ...(current.edit?.delays ?? {}), [roleName]: notifEditDelay } },
+      delete: { delays: { ...(current.delete?.delays ?? {}), [roleName]: notifDeleteDelay } },
+    };
+    await notificationService.updatePermissions(updated);
+    queryClient.invalidateQueries({ queryKey: ['notification-permissions'] });
   };
 
   const createMutation = useMutation({
@@ -75,7 +115,10 @@ export default function RoleManagementView() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: () => settingsService.updateRole(selectedRole!.id, { name: newRoleName, permissionIds: Array.from(selectedPermIds) }),
+    mutationFn: async () => {
+      await settingsService.updateRole(selectedRole!.id, { name: newRoleName, permissionIds: Array.from(selectedPermIds) });
+      await saveNotifDelays(newRoleName);
+    },
     onSuccess: () => { toast.success('Role updated'); queryClient.invalidateQueries({ queryKey: ['roles'] }); setEditModal(false); },
   });
 
@@ -254,6 +297,50 @@ export default function RoleManagementView() {
               })}
             </div>
           </div>
+
+          {/* Notification Delay Settings */}
+          {isSuperAdmin && (
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <label className="form-label mb-0">Notification Permissions</label>
+                <span className="text-xs text-slate-400">Edit / Delete delay per role</span>
+              </div>
+              <div className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-700">
+                  <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Notifications</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4 px-4 py-3">
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 block">Edit Delay</label>
+                    <select
+                      value={notifEditDelay}
+                      onChange={e => setNotifEditDelay(e.target.value)}
+                      className="form-input text-sm py-1.5"
+                    >
+                      {DELAY_OPTIONS.map(o => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 block">Delete Delay</label>
+                    <select
+                      value={notifDeleteDelay}
+                      onChange={e => setNotifDeleteDelay(e.target.value)}
+                      className="form-input text-sm py-1.5"
+                    >
+                      {DELAY_OPTIONS.map(o => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <p className="px-4 pb-3 text-xs text-slate-400">
+                  "Never Expire" = always allowed · "Not Allowed" = permission denied · time values = edit/delete window after creation
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </Modal>
 

@@ -4,12 +4,17 @@ exports.getClientDropdown = exports.updateCustomFields = exports.deleteClient = 
 const app_1 = require("../app");
 const errorMiddleware_1 = require("../middleware/errorMiddleware");
 const helpers_1 = require("../utils/helpers");
+const CLIENT_SORT_FIELDS = {
+    company: 'companyName', contactPerson: 'contactPerson',
+    contractEndDate: 'contractEndDate', createdAt: 'createdAt',
+};
 const getClients = async (req, res) => {
-    const { page = '1', limit = '10', search, isActive } = req.query;
+    const { page = '1', limit = '10', search, isActive, sortBy, sortDir } = req.query;
     const take = parseInt(limit);
     const pg = parseInt(page);
     const { skip } = (0, helpers_1.paginate)(pg, take);
-    const where = {};
+    const bizFilter = req.user?.isSuperAdmin ? {} : (req.user?.businessId ? { businessId: req.user.businessId } : {});
+    const where = { ...bizFilter };
     if (isActive !== undefined)
         where.isActive = isActive === 'true';
     if (search) {
@@ -21,13 +26,20 @@ const getClients = async (req, res) => {
             { gstNumber: { contains: search } },
         ];
     }
+    const prismaField = CLIENT_SORT_FIELDS[sortBy];
+    const orderBy = prismaField
+        ? { [prismaField]: (sortDir === 'desc' ? 'desc' : 'asc') }
+        : { createdAt: 'desc' };
     const [clients, total] = await Promise.all([
         app_1.prisma.client.findMany({
             where,
             skip,
             take,
-            orderBy: { createdAt: 'desc' },
-            include: { _count: { select: { jobOpenings: true, invoices: true } } },
+            orderBy,
+            include: {
+                _count: { select: { jobOpenings: true, invoices: true } },
+                business: { select: { id: true, name: true } },
+            },
         }),
         app_1.prisma.client.count({ where }),
     ]);
@@ -49,7 +61,7 @@ const getClientById = async (req, res) => {
 };
 exports.getClientById = getClientById;
 const createClient = async (req, res) => {
-    const { companyName, contactPerson, email, phone, alternatePhone, address, city, state, country, pincode, gstNumber, panNumber, industry, website, contractStartDate, contractEndDate, notes, } = req.body;
+    const { companyName, contactPerson, email, phone, alternatePhone, address, city, state, country, pincode, gstNumber, panNumber, industry, website, contractStartDate, contractEndDate, notes, businessId: bodyBusinessId, } = req.body;
     const existing = await app_1.prisma.client.findFirst({ where: { email } });
     if (existing)
         throw new errorMiddleware_1.AppError('A client with this email already exists', 409);
@@ -62,6 +74,7 @@ const createClient = async (req, res) => {
             contractEndDate: contractEndDate ? new Date(contractEndDate) : null,
             notes,
             createdBy: req.user?.userId,
+            businessId: req.user?.isSuperAdmin ? (bodyBusinessId || undefined) : (req.user?.businessId ?? undefined),
         },
     });
     await app_1.prisma.auditLog.create({

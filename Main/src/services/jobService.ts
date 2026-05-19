@@ -20,6 +20,8 @@ export const jobService = {
 
   deleteJob: (id: string) => api.delete<ApiResponse>(`/jobs/${id}`),
 
+  duplicateJob: (id: string) => api.post<ApiResponse<JobOpening>>(`/jobs/${id}/duplicate`),
+
   // Assignees
   toggleAssignee: (jobId: string, employeeId: string, action: 'add' | 'remove') =>
     api.patch<ApiResponse>(`/jobs/${jobId}/assignees`, { employeeId, action }),

@@ -1,19 +1,19 @@
-import OpenAI from 'openai';
+import Groq from 'groq-sdk';
 import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
 import fs from 'fs';
 import path from 'path';
 import { logger } from '../utils/logger';
 
-let _openai: OpenAI | null = null;
-function getOpenAI(): OpenAI {
-  if (!_openai) {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OPENAI_API_KEY is not configured');
+let _groq: Groq | null = null;
+function getGroq(): Groq {
+  if (!_groq) {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error('GROQ_API_KEY is not configured');
     }
-    _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    _groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
   }
-  return _openai;
+  return _groq;
 }
 
 const CV_PARSE_PROMPT = `You are an expert HR recruiter and CV parser. Extract all available information from the following CV text and return it as a valid JSON object.
@@ -88,8 +88,8 @@ export async function parseCVWithAI(filePath: string, originalName: string): Pro
 
     const truncatedText = rawText.slice(0, 8000);
 
-    const response = await getOpenAI().chat.completions.create({
-      model: 'gpt-4o',
+    const response = await getGroq().chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
       messages: [
         {
           role: 'system',
@@ -105,7 +105,7 @@ export async function parseCVWithAI(filePath: string, originalName: string): Pro
     });
 
     const content = response.choices[0]?.message?.content;
-    if (!content) throw new Error('No response from OpenAI');
+    if (!content) throw new Error('No response from Groq');
 
     const parsed = JSON.parse(content);
 

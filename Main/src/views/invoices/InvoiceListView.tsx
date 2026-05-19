@@ -7,6 +7,7 @@ import {
   Calendar, DollarSign, Edit, FileText, Copy,
 } from 'lucide-react';
 import { invoiceService } from '../../services/invoiceService';
+import { useAuthStore } from '../../stores/authStore';
 import { Invoice } from '../../types';
 import { formatCurrency, formatDate, getStatusColor, cn } from '../../utils/helpers';
 import Pagination from '../../components/common/Pagination';
@@ -17,11 +18,12 @@ import Modal from '../../components/common/Modal';
 
 // ── Invoice Quick Panel ───────────────────────────────────────────────────────
 
-function InvoiceQuickPanel({ id, onClose, onMarkPaid, onSend }: {
+function InvoiceQuickPanel({ id, onClose, onMarkPaid, onSend, onCanEdit }: {
   id: string;
   onClose: () => void;
   onMarkPaid: (inv: Invoice) => void;
   onSend: (id: string) => void;
+  onCanEdit: boolean;
 }) {
   const navigate = useNavigate();
 
@@ -185,9 +187,11 @@ function InvoiceQuickPanel({ id, onClose, onMarkPaid, onSend }: {
               </button>
             </>
           )}
-          <button onClick={() => navigate(`/invoices/${id}/edit`)} className="btn-primary flex-1 justify-center text-xs py-1.5">
-            <Edit size={13} /> Edit
-          </button>
+          {onCanEdit && (
+            <button onClick={() => navigate(`/invoices/${id}/edit`)} className="btn-primary flex-1 justify-center text-xs py-1.5">
+              <Edit size={13} /> Edit
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -198,7 +202,7 @@ function InvoiceQuickPanel({ id, onClose, onMarkPaid, onSend }: {
 
 interface ContextMenuState { x: number; y: number; invoice: Invoice }
 
-function InvoiceContextMenu({ state, onClose, onView, onDownload, onSend, onMarkPaid, onDelete }: {
+function InvoiceContextMenu({ state, onClose, onView, onDownload, onSend, onMarkPaid, onDelete, canEdit, canDelete }: {
   state: ContextMenuState;
   onClose: () => void;
   onView: () => void;
@@ -206,6 +210,8 @@ function InvoiceContextMenu({ state, onClose, onView, onDownload, onSend, onMark
   onSend: () => void;
   onMarkPaid: () => void;
   onDelete: () => void;
+  canEdit: boolean;
+  canDelete: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -247,11 +253,15 @@ function InvoiceContextMenu({ state, onClose, onView, onDownload, onSend, onMark
     <div ref={ref} style={style} className="w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 overflow-hidden py-1">
       <Item icon={<PanelRight size={14} />} label="Quick View" onClick={onView} />
       <Item icon={<Download size={14} />} label="Download PDF" onClick={onDownload} />
-      {canSendOrPay && <Item icon={<Send size={14} />} label="Send to Client" onClick={onSend} />}
-      {canSendOrPay && <Item icon={<CheckCircle size={14} />} label="Mark as Paid" onClick={onMarkPaid} />}
-      <Item icon={<Edit size={14} />} label="Edit Invoice" onClick={() => {}} />
-      <div className="my-1 border-t border-slate-100 dark:border-slate-700" />
-      {inv.status !== 'PAID' && <Item icon={<Trash2 size={14} />} label="Delete" onClick={onDelete} danger />}
+      {canEdit && canSendOrPay && <Item icon={<Send size={14} />} label="Send to Client" onClick={onSend} />}
+      {canEdit && canSendOrPay && <Item icon={<CheckCircle size={14} />} label="Mark as Paid" onClick={onMarkPaid} />}
+      {canEdit && <Item icon={<Edit size={14} />} label="Edit Invoice" onClick={() => {}} />}
+      {canDelete && inv.status !== 'PAID' && (
+        <>
+          <div className="my-1 border-t border-slate-100 dark:border-slate-700" />
+          <Item icon={<Trash2 size={14} />} label="Delete" onClick={onDelete} danger />
+        </>
+      )}
     </div>
   );
 }
@@ -261,6 +271,10 @@ function InvoiceContextMenu({ state, onClose, onView, onDownload, onSend, onMark
 export default function InvoiceListView() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { canAccess, user: currentUser } = useAuthStore();
+  const canEditInvoice = canAccess('invoices:update');
+  const canDeleteInvoice = canAccess('invoices:delete');
+  const isSuperAdmin = !!currentUser?.isSuperAdmin;
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [search, setSearch] = useState('');
@@ -312,9 +326,11 @@ export default function InvoiceListView() {
           <h1 className="page-title">Invoices</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">{meta?.total ?? 0} invoices</p>
         </div>
-        <button onClick={() => navigate('/invoices/generate')} className="btn-primary">
-          <Plus size={16} /> Generate Invoice
-        </button>
+        {canAccess('invoices:create') && (
+          <button onClick={() => navigate('/invoices/generate')} className="btn-primary">
+            <Plus size={16} /> Generate Invoice
+          </button>
+        )}
       </div>
 
       <div className="card p-4">
@@ -357,6 +373,7 @@ export default function InvoiceListView() {
                 <th className="table-header px-4 py-3 text-left hidden md:table-cell">Date</th>
                 <th className="table-header px-4 py-3 text-right hidden sm:table-cell">Amount</th>
                 <th className="table-header px-4 py-3 text-left">Status</th>
+                {isSuperAdmin && <th className="table-header px-4 py-3 text-left hidden lg:table-cell">Business</th>}
                 <th className="table-header px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
@@ -367,7 +384,7 @@ export default function InvoiceListView() {
                 ))
               ) : invoices.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-16 text-center">
+                  <td colSpan={isSuperAdmin ? 7 : 6} className="px-4 py-16 text-center">
                     <Receipt size={32} className="mx-auto text-slate-300 mb-2" />
                     <p className="text-slate-400 text-sm">No invoices found</p>
                   </td>
@@ -417,6 +434,16 @@ export default function InvoiceListView() {
                       <td className="px-4 py-3">
                         <span className={cn('badge', getStatusColor(inv.status))}>{inv.status}</span>
                       </td>
+                      {isSuperAdmin && (
+                        <td className="px-4 py-3 text-xs hidden lg:table-cell">
+                          {(inv as any).business ? (
+                            <button onClick={() => navigate('/business/' + (inv as any).businessId)}
+                              className="text-xs text-primary-600 hover:underline">
+                              {(inv as any).business.name}
+                            </button>
+                          ) : <span className="text-xs text-slate-400">—</span>}
+                        </td>
+                      )}
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5 justify-end">
                           <button
@@ -426,7 +453,7 @@ export default function InvoiceListView() {
                           >
                             <Download size={14} />
                           </button>
-                          {inv.status !== 'PAID' && inv.status !== 'CANCELLED' && (
+                          {canEditInvoice && inv.status !== 'PAID' && inv.status !== 'CANCELLED' && (
                             <>
                               <button
                                 onClick={() => sendMutation.mutate(inv.id)}
@@ -445,7 +472,7 @@ export default function InvoiceListView() {
                               </button>
                             </>
                           )}
-                          {inv.status !== 'PAID' && (
+                          {canDeleteInvoice && inv.status !== 'PAID' && (
                             <button
                               onClick={() => setDeleteId(inv.id)}
                               className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500"
@@ -507,6 +534,7 @@ export default function InvoiceListView() {
           onClose={() => setExpandedInvoiceId(null)}
           onMarkPaid={(inv) => { setMarkPaidInvoice(inv); setPaidAmount(inv.totalAmount.toString()); setExpandedInvoiceId(null); }}
           onSend={(id) => sendMutation.mutate(id)}
+          onCanEdit={canEditInvoice}
         />
       )}
 
@@ -519,6 +547,8 @@ export default function InvoiceListView() {
           onSend={() => sendMutation.mutate(contextMenu.invoice.id)}
           onMarkPaid={() => { setMarkPaidInvoice(contextMenu.invoice); setPaidAmount(contextMenu.invoice.totalAmount.toString()); }}
           onDelete={() => setDeleteId(contextMenu.invoice.id)}
+          canEdit={canEditInvoice}
+          canDelete={canDeleteInvoice}
         />
       )}
     </div>

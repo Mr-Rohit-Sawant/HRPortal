@@ -82,3 +82,29 @@ export const uploadDocument = multer({
   storage: createStorage('uploads/documents'),
   limits: { fileSize: maxSizeMB },
 });
+
+const customFileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const allowed = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.xlsx', '.xls', '.txt'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowed.includes(ext)) cb(null, true);
+  else cb(new AppError(`File type ${ext} not supported.`, 400));
+};
+
+export const uploadCustomFiles = multer({
+  storage: createStorage('uploads/custom'),
+  fileFilter: customFileFilter,
+  limits: { fileSize: maxSizeMB, files: 20 },
+});
+
+const bugReportFileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const allowed = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.webm', '.mov'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (allowed.includes(ext)) cb(null, true);
+  else cb(new AppError('Only image or video files are allowed', 400));
+};
+
+export const uploadBugReport = multer({
+  storage: createStorage('uploads/bug-reports'),
+  fileFilter: bugReportFileFilter,
+  limits: { fileSize: 10 * 1024 * 1024, files: 10 },
+});

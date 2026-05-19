@@ -24,6 +24,10 @@ import RoleManagementView from '../views/settings/RoleManagementView';
 import FontManagementView from '../views/settings/FontManagementView';
 import AuditLogsView from '../views/settings/AuditLogsView';
 import LanguageManagementView from '../views/settings/LanguageManagementView';
+import NotificationsView from '../views/notifications/NotificationsView';
+import BusinessListView from '../views/business/BusinessListView';
+import BusinessDetailView from '../views/business/BusinessDetailView';
+import BugReportsView from '../views/settings/BugReportsView';
 
 // Shows login at "/" when not authenticated, redirects to dashboard when authenticated
 const RootRoute = () => {
@@ -49,6 +53,8 @@ export default function AppRouter() {
       {/* Protected layout — pathless route keeps all child URLs unchanged */}
       <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route path="/dashboard" element={<DashboardView />} />
+        <Route path="/business" element={<BusinessListView />} />
+        <Route path="/business/:id" element={<BusinessDetailView />} />
 
         {/* CV Database */}
         <Route path="/cv-database" element={<CVDatabaseView />} />
@@ -77,6 +83,9 @@ export default function AppRouter() {
         <Route path="/invoices" element={<InvoiceListView />} />
         <Route path="/invoices/generate" element={<GenerateInvoiceView />} />
 
+        {/* Notifications */}
+        <Route path="/notifications" element={<NotificationsView />} />
+
         {/* Settings */}
         <Route path="/profile" element={<ProfileView />} />
         <Route path="/settings/theme" element={<ThemeManagementView />} />
@@ -84,6 +93,7 @@ export default function AppRouter() {
         <Route path="/settings/fonts" element={<FontManagementView />} />
         <Route path="/settings/audit" element={<AuditLogsView />} />
         <Route path="/settings/languages" element={<LanguageManagementView />} />
+        <Route path="/settings/bug-reports" element={<BugReportsView />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

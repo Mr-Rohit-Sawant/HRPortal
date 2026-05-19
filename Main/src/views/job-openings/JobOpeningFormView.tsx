@@ -7,6 +7,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Save, Plus, X } from 'lucide-react';
 import { jobService } from '../../services/jobService';
 import { clientService } from '../../services/clientService';
+import { useAuthStore } from '../../stores/authStore';
+import BusinessSelector from '../../components/common/BusinessSelector';
 import toast from 'react-hot-toast';
 
 const schema = z.object({
@@ -33,6 +35,9 @@ export default function JobOpeningFormView() {
   const { id } = useParams();
   const queryClient = useQueryClient();
   const isEdit = !!id;
+  const { user } = useAuthStore();
+  const isSuperAdmin = user?.isSuperAdmin ?? false;
+  const [selectedBusinessId, setSelectedBusinessId] = useState('');
 
   const [requiredSkills, setRequiredSkills] = useState<string[]>([]);
   const [preferredSkills, setPreferredSkills] = useState<string[]>([]);
@@ -78,6 +83,7 @@ export default function JobOpeningFormView() {
       setRequiredSkills(existingJob.requiredSkills || []);
       setPreferredSkills(existingJob.preferredSkills || []);
       setTags(existingJob.tags || []);
+      if (existingJob.businessId) setSelectedBusinessId(existingJob.businessId);
     }
   }, [existingJob, reset]);
 
@@ -97,6 +103,7 @@ export default function JobOpeningFormView() {
     fd.append('requiredSkills', JSON.stringify(requiredSkills));
     fd.append('preferredSkills', JSON.stringify(preferredSkills));
     fd.append('tags', JSON.stringify(tags));
+    if (isSuperAdmin && selectedBusinessId) fd.append('businessId', selectedBusinessId);
 
     if (isEdit) updateMutation.mutate({ id: id!, fd: fd as any });
     else createMutation.mutate(fd);
@@ -134,6 +141,11 @@ export default function JobOpeningFormView() {
         <h1 className="page-title">{isEdit ? 'Edit Job Opening' : 'New Job Opening'}</h1>
       </div>
 
+      {isSuperAdmin && (
+        <BusinessSelector value={selectedBusinessId} onChange={setSelectedBusinessId} className="mb-6" />
+      )}
+
+      {(!isSuperAdmin || selectedBusinessId) && (
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <div className="xl:col-span-2 space-y-6">
@@ -280,6 +292,7 @@ export default function JobOpeningFormView() {
           </div>
         </div>
       </form>
+      )}
     </div>
   );
 }

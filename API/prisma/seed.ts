@@ -21,6 +21,7 @@ async function main() {
     { module: 'clients', action: 'create' },
     { module: 'clients', action: 'update' },
     { module: 'clients', action: 'delete' },
+    { module: 'clients', action: 'view_contacts' },
     // CV Database
     { module: 'cv', action: 'view' },
     { module: 'cv', action: 'create' },
@@ -109,7 +110,7 @@ async function main() {
   // Assign admin permissions
   const adminPermKeys = [
     'dashboard:view', 'employees:view', 'employees:create', 'employees:update', 'employees:toggle_status',
-    'clients:view', 'clients:create', 'clients:update', 'cv:view', 'cv:create', 'cv:update', 'cv:bulk_import',
+    'clients:view', 'clients:create', 'clients:update', 'clients:view_contacts', 'cv:view', 'cv:create', 'cv:update', 'cv:bulk_import',
     'cv:download', 'jobs:view', 'jobs:create', 'jobs:update', 'invoices:view', 'invoices:create',
     'invoices:update', 'invoices:send_email', 'settings:view', 'columns:manage',
     'dropdown:manage_options', 'settings:manage_roles',

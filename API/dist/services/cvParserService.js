@@ -6,21 +6,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.extractTextFromFile = extractTextFromFile;
 exports.parseCVWithAI = parseCVWithAI;
 exports.buildSearchVector = buildSearchVector;
-const openai_1 = __importDefault(require("openai"));
+const groq_sdk_1 = __importDefault(require("groq-sdk"));
 const pdf_parse_1 = __importDefault(require("pdf-parse"));
 const mammoth_1 = __importDefault(require("mammoth"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const logger_1 = require("../utils/logger");
-let _openai = null;
-function getOpenAI() {
-    if (!_openai) {
-        if (!process.env.OPENAI_API_KEY) {
-            throw new Error('OPENAI_API_KEY is not configured');
+let _groq = null;
+function getGroq() {
+    if (!_groq) {
+        if (!process.env.GROQ_API_KEY) {
+            throw new Error('GROQ_API_KEY is not configured');
         }
-        _openai = new openai_1.default({ apiKey: process.env.OPENAI_API_KEY });
+        _groq = new groq_sdk_1.default({ apiKey: process.env.GROQ_API_KEY });
     }
-    return _openai;
+    return _groq;
 }
 const CV_PARSE_PROMPT = `You are an expert HR recruiter and CV parser. Extract all available information from the following CV text and return it as a valid JSON object.
 
@@ -81,8 +81,8 @@ async function parseCVWithAI(filePath, originalName) {
             throw new Error('Could not extract sufficient text from the CV');
         }
         const truncatedText = rawText.slice(0, 8000);
-        const response = await getOpenAI().chat.completions.create({
-            model: 'gpt-4o',
+        const response = await getGroq().chat.completions.create({
+            model: 'llama-3.3-70b-versatile',
             messages: [
                 {
                     role: 'system',
@@ -98,7 +98,7 @@ async function parseCVWithAI(filePath, originalName) {
         });
         const content = response.choices[0]?.message?.content;
         if (!content)
-            throw new Error('No response from OpenAI');
+            throw new Error('No response from Groq');
         const parsed = JSON.parse(content);
         const filledFields = Object.values(parsed).filter((v) => v !== null && v !== undefined).length;
         const totalFields = Object.keys(parsed).length;

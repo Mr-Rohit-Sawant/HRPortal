@@ -304,3 +304,20 @@ export const markAllNotificationsRead = async (req: Request, res: Response) => {
   await prisma.notification.updateMany({ where: { userId: req.user!.userId }, data: { isRead: true } });
   res.json({ success: true });
 };
+
+
+// --- Custom Field File Upload ---
+export const uploadCustomFieldFiles = async (req: Request, res: Response) => {
+  const files = req.files as Express.Multer.File[];
+  if (!files || files.length === 0) {
+    res.status(400).json({ success: false, message: 'No files uploaded' });
+    return;
+  }
+  const result = files.map((f) => ({
+    name: f.originalname,
+    path: `custom/${f.filename}`,
+    size: f.size,
+    mimeType: f.mimetype,
+  }));
+  res.json({ success: true, data: result });
+};

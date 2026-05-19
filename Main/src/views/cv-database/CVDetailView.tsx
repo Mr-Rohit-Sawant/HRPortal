@@ -140,11 +140,11 @@ export default function CVDetailView() {
           {(data.skills?.length || data.technologyStack?.length || data.certifications?.length) && (
             <div className="card p-5">
               <h3 className="font-semibold text-slate-900 dark:text-white mb-3">Skills & Expertise</h3>
-              {data.skills?.length > 0 && (
+              {(data.skills?.length ?? 0) > 0 && (
                 <div className="mb-3">
                   <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">SKILLS</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {data.skills.map((skill: string) => (
+                    {(data.skills ?? []).map((skill: string) => (
                       <span key={skill} className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 text-xs rounded-lg font-medium">
                         {skill}
                       </span>
@@ -152,11 +152,11 @@ export default function CVDetailView() {
                   </div>
                 </div>
               )}
-              {data.technologyStack?.length > 0 && (
+              {(data.technologyStack?.length ?? 0) > 0 && (
                 <div className="mb-3">
                   <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">TECH STACK</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {data.technologyStack.map((t: string) => (
+                    {(data.technologyStack ?? []).map((t: string) => (
                       <span key={t} className="px-2.5 py-1 bg-violet-50 dark:bg-violet-900/20 text-violet-700 dark:text-violet-400 text-xs rounded-lg font-medium">
                         {t}
                       </span>
@@ -164,11 +164,11 @@ export default function CVDetailView() {
                   </div>
                 </div>
               )}
-              {data.certifications?.length > 0 && (
+              {(data.certifications?.length ?? 0) > 0 && (
                 <div>
                   <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">CERTIFICATIONS</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {data.certifications.map((c: string) => (
+                    {(data.certifications ?? []).map((c: string) => (
                       <span key={c} className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-xs rounded-lg font-medium">
                         {c}
                       </span>
@@ -183,21 +183,21 @@ export default function CVDetailView() {
           {(data.languages?.length || data.preferredLocations?.length) && (
             <div className="card p-5">
               <h3 className="font-semibold text-slate-900 dark:text-white mb-3">Languages & Location Preference</h3>
-              {data.languages?.length > 0 && (
+              {(data.languages?.length ?? 0) > 0 && (
                 <div className="mb-3">
                   <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">LANGUAGES</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {data.languages.map((l: string) => (
+                    {(data.languages ?? []).map((l: string) => (
                       <span key={l} className="px-2.5 py-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs rounded-lg">{l}</span>
                     ))}
                   </div>
                 </div>
               )}
-              {data.preferredLocations?.length > 0 && (
+              {(data.preferredLocations?.length ?? 0) > 0 && (
                 <div>
                   <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">PREFERRED LOCATIONS</p>
                   <div className="flex flex-wrap gap-1.5">
-                    {data.preferredLocations.map((l: string) => (
+                    {(data.preferredLocations ?? []).map((l: string) => (
                       <span key={l} className="badge bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-400">{l}</span>
                     ))}
                   </div>
