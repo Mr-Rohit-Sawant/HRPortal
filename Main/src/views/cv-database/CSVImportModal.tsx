@@ -1,14 +1,16 @@
 import { useState, useMemo } from 'react';
 import { useDropzone } from 'react-dropzone';
 import Papa from 'papaparse';
-import { X, Download, Upload, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Download, Upload, CheckCircle, AlertCircle, Loader2, Building2 } from 'lucide-react';
 import { cvService } from '../../services/cvService';
 import { settingsService } from '../../services/settingsService';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '../../stores/authStore';
 import { ColumnDefinition } from '../../types';
 import toast from 'react-hot-toast';
 import { cn } from '../../utils/helpers';
 import api from '../../services/api';
+import BusinessSearchSelect from '../../components/common/BusinessSearchSelect';
 
 // ── Standard field definitions ────────────────────────────────────────────────
 // { fieldName (used as CSV column key), label (human-readable header) }
@@ -87,6 +89,9 @@ export default function CSVImportModal({ onClose }: { onClose: () => void }) {
   const [progress, setProgress] = useState(0);
   const [total, setTotal] = useState(0);
   const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+  const isSuperAdmin = user?.isSuperAdmin ?? false;
+  const [selectedBusinessId, setSelectedBusinessId] = useState('');
 
   // Fetch custom columns so we can include them in the template
   const { data: customColsData } = useQuery({
@@ -164,7 +169,6 @@ export default function CSVImportModal({ onClose }: { onClose: () => void }) {
           Object.entries(row).forEach(([header, val]) => {
             if (val === undefined || val === '') return;
 
-            // Map label-based header to field key (handles both label and key formats)
             const fieldKey = labelToKey[header] ?? (STANDARD_KEYS.has(header) ? header : null);
             const customCol = labelToCustomCol[header] ?? customCols.find(c => c.name === header);
 
@@ -179,6 +183,9 @@ export default function CSVImportModal({ onClose }: { onClose: () => void }) {
               customFieldValues[customCol.name] = val;
             }
           });
+
+          const bizId = isSuperAdmin ? selectedBusinessId : (user?.businessId || '');
+          if (bizId) formData.append('businessId', bizId);
 
           try {
             const createRes = await cvService.createCandidate(formData);
@@ -262,6 +269,26 @@ export default function CSVImportModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="p-5 space-y-4">
+          {/* Business selector — super admin only */}
+          {isSuperAdmin && (
+            <div className="flex items-center gap-3 p-3.5 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800/50">
+              <Building2 size={16} className="text-amber-600 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Select Business *</p>
+                <BusinessSearchSelect
+                  value={selectedBusinessId}
+                  onChange={setSelectedBusinessId}
+                  disabled={importing}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Gate rest of modal for super admin until business is selected */}
+          {isSuperAdmin && !selectedBusinessId ? (
+            <p className="text-center text-sm text-slate-400 py-4">Select a business above to continue</p>
+          ) : (<>
+
           {/* Step 1 — Download template */}
           <div className="flex items-center gap-3 p-3.5 bg-primary-50 dark:bg-primary-900/20 rounded-xl border border-primary-100 dark:border-primary-800/50">
             <div className="w-7 h-7 rounded-full bg-primary-600 text-white text-xs font-bold flex items-center justify-center flex-shrink-0">1</div>
@@ -362,6 +389,7 @@ export default function CSVImportModal({ onClose }: { onClose: () => void }) {
               )}
             </div>
           </div>
+          </>)}
         </div>
 
         {/* Footer */}

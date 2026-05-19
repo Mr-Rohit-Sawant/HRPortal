@@ -72,8 +72,8 @@ export const jobService = {
   removeCandidateFromRound: (roundId: string, candidateId: string) =>
     api.delete<ApiResponse>(`/jobs/rounds/${roundId}/candidates/${candidateId}`),
 
-  importJobsCSV: (rows: any[]) =>
-    api.post<ApiResponse>('/jobs/import-csv', { rows }),
+  importJobsCSV: (rows: any[], businessId?: string) =>
+    api.post<ApiResponse>('/jobs/import-csv', { rows, businessId }),
 
   downloadCSVTemplate: () => {
     const headers = ['jobTitle', 'clientName', 'description', 'requiredSkills', 'experienceMin', 'workLocation', 'status', 'priority'];

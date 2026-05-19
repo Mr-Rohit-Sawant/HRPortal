@@ -164,7 +164,7 @@ export const toggleBusinessStatus = async (req: Request, res: Response) => {
 export const getBusinessesDropdown = async (_req: Request, res: Response) => {
   const businesses = await prisma.business.findMany({
     where: { status: 'ACTIVE' },
-    select: { id: true, name: true, code: true },
+    select: { id: true, name: true, code: true, adminEmail: true },
     orderBy: { name: 'asc' },
   });
   res.json({ success: true, data: businesses });

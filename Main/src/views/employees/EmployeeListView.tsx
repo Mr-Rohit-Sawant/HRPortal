@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, Search, Edit, Trash2, ToggleLeft, ToggleRight, RefreshCw, Eye,
+  Plus, Upload, Search, Edit, Trash2, ToggleLeft, ToggleRight, RefreshCw, Eye,
   PanelRight, X, Mail, Phone, MapPin, Briefcase, ExternalLink, Loader2,
   Calendar, Shield, KeyRound,
 } from 'lucide-react';
 import { employeeService } from '../../services/employeeService';
 import ResetPasswordModal from '../../components/employees/ResetPasswordModal';
+import EmployeeCSVImportModal from '../../components/employees/EmployeeCSVImportModal';
 import { User } from '../../types';
 import { formatDate, getStatusColor, getInitials, cn } from '../../utils/helpers';
 import Pagination from '../../components/common/Pagination';
@@ -204,6 +205,7 @@ export default function EmployeeListView() {
   const [resetPwId, setResetPwId] = useState<string | null>(null);
   const [sort, setSort] = useState({ field: '', dir: 'asc' as 'asc' | 'desc' });
   const [expandedEmployeeId, setExpandedEmployeeId] = useState<string | null>(null);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
   const debouncedSearch = useDebounce(search, 400);
 
   const { data, isLoading } = useQuery({
@@ -383,11 +385,18 @@ export default function EmployeeListView() {
           <h1 className="page-title">{t('employees.title')}</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">{meta?.total ?? 0} {t('employees.title').toLowerCase()}</p>
         </div>
-        {canAccess('employees:create') && (
-          <button onClick={() => navigate('/employees/add')} className="btn-primary">
-            <Plus size={16} /> {t('employees.addEmployee')}
-          </button>
-        )}
+        <div className="flex gap-2 flex-wrap">
+          {canAccess('employees:create') && (
+            <button onClick={() => setCsvImportOpen(true)} className="btn-secondary text-xs">
+              <Upload size={14} /> Import CSV
+            </button>
+          )}
+          {canAccess('employees:create') && (
+            <button onClick={() => navigate('/employees/add')} className="btn-primary">
+              <Plus size={16} /> {t('employees.addEmployee')}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="card p-4">
@@ -451,6 +460,8 @@ export default function EmployeeListView() {
       {expandedEmployeeId && (
         <EmployeeQuickPanel id={expandedEmployeeId} onClose={() => setExpandedEmployeeId(null)} />
       )}
+
+      {csvImportOpen && <EmployeeCSVImportModal onClose={() => setCsvImportOpen(false)} />}
     </div>
   );
 }

@@ -15,9 +15,9 @@ import Pagination from '../../components/common/Pagination';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import DynamicTable, { FixedColumn, ActionButton } from '../../components/common/DynamicTable';
 import JobDetailContent from './JobDetailContent';
+import JobCSVImportModal from '../../components/job-openings/JobCSVImportModal';
 import toast from 'react-hot-toast';
 import { useDebounce } from '../../hooks/useDebounce';
-import Papa from 'papaparse';
 
 const QUERY_KEY = ['jobs'];
 
@@ -523,6 +523,7 @@ export default function JobOpeningsView() {
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [manageRecruitersJob, setManageRecruitersJob] = useState<JobOpening | null>(null);
   const [selectedJobIds, setSelectedJobIds] = useState<string[]>([]);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
   const debouncedSearch = useDebounce(search, 400);
 
   const handleExpandRow = useCallback((row: JobOpening) => {
@@ -560,23 +561,6 @@ export default function JobOpeningsView() {
     },
     onError: () => toast.error('Failed to duplicate job'),
   });
-
-  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (results) => {
-        try {
-          const res = await jobService.importJobsCSV(results.data as any[]);
-          const { created, errors } = res.data.data;
-          toast.success(`${created} jobs imported${errors.length > 0 ? `, ${errors.length} failed` : ''}`);
-          queryClient.invalidateQueries({ queryKey: QUERY_KEY });
-        } catch { toast.error('Import failed'); }
-      },
-    });
-  };
 
   const jobs: JobOpening[] = data?.data || [];
   const meta = data?.meta;
@@ -704,13 +688,9 @@ export default function JobOpeningsView() {
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{meta?.total ?? 0} total openings</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <button onClick={jobService.downloadCSVTemplate} className="btn-secondary text-xs">
-            <Download size={14} /> CSV Template
-          </button>
-          <label className="btn-secondary text-xs cursor-pointer">
+          <button onClick={() => setCsvImportOpen(true)} className="btn-secondary text-xs">
             <Upload size={14} /> Import CSV
-            <input type="file" accept=".csv" className="hidden" onChange={handleImportCSV} />
-          </label>
+          </button>
           <button onClick={() => navigate('/job-openings/new')} className="btn-primary">
             <Plus size={16} /> {t('jobs.addJob')}
           </button>
@@ -859,6 +839,8 @@ export default function JobOpeningsView() {
           onClose={() => setManageRecruitersJob(null)}
         />
       )}
+
+      {csvImportOpen && <JobCSVImportModal onClose={() => setCsvImportOpen(false)} />}
     </div>
   );
 }

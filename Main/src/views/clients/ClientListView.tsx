@@ -3,10 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  Plus, Search, Edit, Trash2, ToggleLeft, ToggleRight, Mail, Phone, Eye,
+  Plus, Upload, Search, Edit, Trash2, ToggleLeft, ToggleRight, Mail, Phone, Eye,
   PanelRight, X, ExternalLink, Loader2, MapPin, Globe, Briefcase,
 } from 'lucide-react';
 import { clientService } from '../../services/clientService';
+import ClientCSVImportModal from '../../components/clients/ClientCSVImportModal';
 import { Client } from '../../types';
 import { formatDate, cn } from '../../utils/helpers';
 import { useAuthStore } from '../../stores/authStore';
@@ -172,6 +173,7 @@ export default function ClientListView() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [sort, setSort] = useState({ field: '', dir: 'asc' as 'asc' | 'desc' });
   const [expandedClientId, setExpandedClientId] = useState<string | null>(null);
+  const [csvImportOpen, setCsvImportOpen] = useState(false);
   const debouncedSearch = useDebounce(search, 400);
   const { t } = useTranslation();
 
@@ -364,9 +366,14 @@ export default function ClientListView() {
           <h1 className="page-title">{t('clients.title')}</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">{meta?.total ?? 0} {t('clients.company').toLowerCase()}s</p>
         </div>
-        <button onClick={() => navigate('/clients/add')} className="btn-primary">
-          <Plus size={16} /> {t('clients.addClient')}
-        </button>
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={() => setCsvImportOpen(true)} className="btn-secondary text-xs">
+            <Upload size={14} /> Import CSV
+          </button>
+          <button onClick={() => navigate('/clients/add')} className="btn-primary">
+            <Plus size={16} /> {t('clients.addClient')}
+          </button>
+        </div>
       </div>
 
       <div className="card p-4">
@@ -418,6 +425,8 @@ export default function ClientListView() {
       {expandedClientId && (
         <ClientQuickPanel id={expandedClientId} onClose={() => setExpandedClientId(null)} />
       )}
+
+      {csvImportOpen && <ClientCSVImportModal onClose={() => setCsvImportOpen(false)} />}
     </div>
   );
 }
