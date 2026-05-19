@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadBugReport = exports.uploadCustomFiles = exports.uploadDocument = exports.uploadFont = exports.uploadProfilePhoto = exports.uploadLogo = exports.uploadBulkCV = exports.uploadCV = void 0;
+exports.uploadEmployeeFiles = exports.uploadBugReport = exports.uploadCustomFiles = exports.uploadDocument = exports.uploadFont = exports.uploadProfilePhoto = exports.uploadLogo = exports.uploadBulkCV = exports.uploadCV = void 0;
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
@@ -110,4 +110,38 @@ exports.uploadBugReport = (0, multer_1.default)({
     fileFilter: bugReportFileFilter,
     limits: { fileSize: 10 * 1024 * 1024, files: 10 },
 });
+// Employee profile photo + optional CV file in one request
+const employeeMultiStorage = (0, multer_1.default)({
+    storage: multer_1.default.diskStorage({
+        destination: (_req, file, cb) => {
+            const dest = file.fieldname === 'cvFile'
+                ? path_1.default.join(process.cwd(), 'uploads/employee-cvs')
+                : path_1.default.join(process.cwd(), 'uploads/profiles');
+            ensureDir(dest);
+            cb(null, dest);
+        },
+        filename: (_req, file, cb) => {
+            const ext = path_1.default.extname(file.originalname);
+            cb(null, `${(0, uuid_1.v4)()}${ext}`);
+        },
+    }),
+    fileFilter: (_req, file, cb) => {
+        if (file.fieldname === 'cvFile') {
+            const allowed = ['.pdf', '.doc', '.docx'];
+            const ext = path_1.default.extname(file.originalname).toLowerCase();
+            if (allowed.includes(ext))
+                cb(null, true);
+            else
+                cb(new errorMiddleware_1.AppError('Only PDF or Word documents allowed for CV', 400));
+        }
+        else {
+            imageFilter(_req, file, cb);
+        }
+    },
+    limits: { fileSize: 10 * 1024 * 1024 },
+});
+exports.uploadEmployeeFiles = employeeMultiStorage.fields([
+    { name: 'profilePhoto', maxCount: 1 },
+    { name: 'cvFile', maxCount: 1 },
+]);
 //# sourceMappingURL=uploadMiddleware.js.map

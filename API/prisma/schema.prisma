@@ -143,6 +143,7 @@ model Business {
   invoices          Invoice[]
   userNotifications UserNotification[]
   bugReports        BugReport[]
+  bugStatusLabels   BugStatusLabel[]
 
   @@index([status])
   @@map("businesses")
@@ -241,7 +242,8 @@ model User {
   assignedJobs JobOpening[] @relation("AssignedToUser")
   invoices    Invoice[]    @relation("InvoiceCreatedBy")
   userNotificationsCreated UserNotification[] @relation("UserNotifCreator")
-  bugReports  BugReport[]  @relation("UserBugReports")
+  bugReports         BugReport[]  @relation("UserBugReports")
+  assignedBugReports BugReport[]  @relation("AssignedBugReports")
 
   @@index([email])
   @@index([status])
@@ -673,9 +675,20 @@ model UserNotification {
 
 model BugReport {
   id              String   @id @default(uuid())
+  title           String?
   type            String   @default("Bug")
   description     String   @db.Text
+  status          String   @default("open")
   priority        String   @default("medium")
+  severity        String?
+  module          String?
+  browser         String?
+  environment     String?
+  device          String?
+  reproducibility String?
+  tags            Json?
+  resolution      String?  @db.Text
+  assignedToId    String?
   reportedByEmail String
   reportedByName  String?
   userId          String?
@@ -685,11 +698,29 @@ model BugReport {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  user     User?     @relation("UserBugReports", fields: [userId], references: [id], onDelete: SetNull)
-  business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  user       User?     @relation("UserBugReports", fields: [userId], references: [id], onDelete: SetNull)
+  assignedTo User?     @relation("AssignedBugReports", fields: [assignedToId], references: [id], onDelete: SetNull)
+  business   Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
   @@index([priority])
+  @@index([status])
   @@index([businessId])
   @@map("bug_reports")
+}
+
+model BugStatusLabel {
+  id         String   @id @default(uuid())
+  name       String
+  color      String   @default("#6B7280")
+  order      Int      @default(0)
+  isArchived Boolean  @default(false)
+  businessId String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  business Business? @relation(fields: [businessId], references: [id], onDelete: SetNull)
+
+  @@index([businessId])
+  @@map("bug_status_labels")
 }

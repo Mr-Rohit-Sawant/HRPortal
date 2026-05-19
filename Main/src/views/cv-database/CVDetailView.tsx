@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Edit, Download, MapPin, Mail, Phone, Briefcase, GraduationCap, Star, Calendar } from 'lucide-react';
 import { cvService } from '../../services/cvService';
 import { formatDate, formatCTC, formatExperience, getStatusColor, cn } from '../../utils/helpers';
+import DocumentViewer, { DocFile } from '../../components/common/DocumentViewer';
 import toast from 'react-hot-toast';
 
 export default function CVDetailView() {
@@ -215,6 +216,19 @@ export default function CVDetailView() {
           )}
         </div>
       </div>
+
+      {/* Document Viewer — below the profile grid */}
+      {data.cvFile && (() => {
+        const docFiles: DocFile[] = [{ url: `/${data.cvFile}`, name: data.cvOriginalName || data.cvFile.split('/').pop() || 'document' }];
+        return (
+          <div className="card p-4 mt-6">
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+              <Briefcase size={15} className="text-primary-500" /> CV / Resume
+            </h3>
+            <DocumentViewer files={docFiles} height={680} />
+          </div>
+        );
+      })()}
     </div>
   );
 }

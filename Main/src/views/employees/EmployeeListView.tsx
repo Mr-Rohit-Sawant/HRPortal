@@ -153,6 +153,7 @@ function EmployeeQuickPanel({ id, onClose }: { id: string; onClose: () => void }
                 )}
               </div>
             )}
+
           </>
         )}
       </div>

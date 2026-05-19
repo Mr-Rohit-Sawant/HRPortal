@@ -777,7 +777,7 @@ function RoundPanel({ round, jobId, isFirst, processGroup = 'main', onRefresh }:
                           {c?.firstName?.[0]}{c?.lastName?.[0]}
                         </div>
                         <button
-                          onClick={() => navigate(`/cv/${c?.id}`)}
+                          onClick={() => navigate(`/cv-database/${c?.id}`)}
                           className="text-xs font-medium text-slate-900 dark:text-white whitespace-nowrap hover:text-primary-600 dark:hover:text-primary-400 hover:underline"
                         >
                           {c?.firstName} {c?.lastName}
@@ -1014,7 +1014,7 @@ function PostSelectionSection({ job, jobId, processGroup = 'main', onRefresh }: 
                           {c?.firstName?.[0]}{c?.lastName?.[0]}
                         </div>
                         <button
-                          onClick={() => navigate(`/cv/${c?.id}`)}
+                          onClick={() => navigate(`/cv-database/${c?.id}`)}
                           className="text-xs font-medium text-slate-900 dark:text-white hover:text-primary-600 hover:underline whitespace-nowrap"
                         >
                           {c?.firstName} {c?.lastName}

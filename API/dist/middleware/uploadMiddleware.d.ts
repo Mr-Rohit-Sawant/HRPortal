@@ -7,4 +7,5 @@ export declare const uploadFont: multer.Multer;
 export declare const uploadDocument: multer.Multer;
 export declare const uploadCustomFiles: multer.Multer;
 export declare const uploadBugReport: multer.Multer;
+export declare const uploadEmployeeFiles: import("express").RequestHandler<import("express-serve-static-core").ParamsDictionary, any, any, import("qs").ParsedQs, Record<string, any>>;
 //# sourceMappingURL=uploadMiddleware.d.ts.map

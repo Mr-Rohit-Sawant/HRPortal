@@ -6,8 +6,9 @@ import {
   Plus, Upload, Search, Star, Download, Trash2,
   SlidersHorizontal, Eye, ChevronDown, FileSpreadsheet, Files,
   PanelRight, X, Mail, Phone, MapPin, Briefcase, GraduationCap,
-  ExternalLink, Edit, Loader2,
+  ExternalLink, Edit, Loader2, FileText,
 } from 'lucide-react';
+import DocumentViewer, { DocFile } from '../../components/common/DocumentViewer';
 import CSVImportModal from './CSVImportModal';
 import { cvService } from '../../services/cvService';
 import { useAuthStore } from '../../stores/authStore';
@@ -232,6 +233,19 @@ function CandidateQuickPanel({ id, onClose }: { id: string; onClose: () => void 
                 <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-line">{data.notes}</p>
               </div>
             )}
+
+            {/* Document Viewer */}
+            {data.cvFile && (() => {
+              const docFiles: DocFile[] = [{ url: `/${data.cvFile}`, name: data.cvOriginalName || data.cvFile.split('/').pop() || 'document' }];
+              return (
+                <div className="px-4 py-4">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">
+                    <FileText size={11} /> CV / Resume
+                  </p>
+                  <DocumentViewer files={docFiles} height={500} />
+                </div>
+              );
+            })()}
           </>
         )}
       </div>

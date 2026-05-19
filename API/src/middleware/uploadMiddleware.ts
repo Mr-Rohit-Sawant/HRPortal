@@ -108,3 +108,36 @@ export const uploadBugReport = multer({
   fileFilter: bugReportFileFilter,
   limits: { fileSize: 10 * 1024 * 1024, files: 10 },
 });
+
+// Employee profile photo + optional CV file in one request
+const employeeMultiStorage = multer({
+  storage: multer.diskStorage({
+    destination: (_req, file, cb) => {
+      const dest = file.fieldname === 'cvFile'
+        ? path.join(process.cwd(), 'uploads/employee-cvs')
+        : path.join(process.cwd(), 'uploads/profiles');
+      ensureDir(dest);
+      cb(null, dest);
+    },
+    filename: (_req, file, cb) => {
+      const ext = path.extname(file.originalname);
+      cb(null, `${uuidv4()}${ext}`);
+    },
+  }),
+  fileFilter: (_req, file, cb) => {
+    if (file.fieldname === 'cvFile') {
+      const allowed = ['.pdf', '.doc', '.docx'];
+      const ext = path.extname(file.originalname).toLowerCase();
+      if (allowed.includes(ext)) cb(null, true);
+      else cb(new AppError('Only PDF or Word documents allowed for CV', 400));
+    } else {
+      imageFilter(_req, file, cb);
+    }
+  },
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
+
+export const uploadEmployeeFiles = employeeMultiStorage.fields([
+  { name: 'profilePhoto', maxCount: 1 },
+  { name: 'cvFile', maxCount: 1 },
+]);
