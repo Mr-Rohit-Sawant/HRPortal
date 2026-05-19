@@ -298,6 +298,7 @@ export interface ColumnDefinition {
 export interface AppSettings {
   appName?: string;
   logo?: string;
+  favicon?: string;
   primaryColor?: string;
   accentColor?: string;
   sidebarColor?: string;

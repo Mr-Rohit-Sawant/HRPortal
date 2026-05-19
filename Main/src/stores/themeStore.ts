@@ -9,6 +9,7 @@ interface ThemeState {
   fontFamily: string;
   appName: string;
   appLogo: string;
+  appFavicon: string;
   toggleDark: () => void;
   setTheme: (settings: Partial<Omit<ThemeState, 'toggleDark' | 'setTheme' | 'applyTheme'>>) => void;
   applyTheme: () => void;
@@ -33,6 +34,7 @@ export const useThemeStore = create<ThemeState>()(
       fontFamily: 'Inter',
       appName: 'HR Recruitment System',
       appLogo: '',
+      appFavicon: '',
 
       toggleDark: () => {
         set((s) => ({ isDark: !s.isDark }));
@@ -45,7 +47,23 @@ export const useThemeStore = create<ThemeState>()(
       },
 
       applyTheme: () => {
-        const { isDark, primaryColor, sidebarColor, fontFamily } = get();
+        const { isDark, primaryColor, sidebarColor, fontFamily, appFavicon, appName } = get();
+
+        // Update browser tab title
+        if (appName) document.title = appName;
+
+        // Update favicon dynamically
+        if (appFavicon) {
+          const faviconUrl = `/${appFavicon}?t=${Date.now()}`;
+          let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
+          if (!link) {
+            link = document.createElement('link');
+            link.rel = 'icon';
+            document.head.appendChild(link);
+          }
+          link.href = faviconUrl;
+          link.type = appFavicon.endsWith('.svg') ? 'image/svg+xml' : appFavicon.endsWith('.ico') ? 'image/x-icon' : 'image/png';
+        }
         const root = document.documentElement;
 
         // Dark mode

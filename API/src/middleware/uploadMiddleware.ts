@@ -66,6 +66,17 @@ export const uploadLogo = multer({
   limits: { fileSize: 2 * 1024 * 1024 },
 });
 
+export const uploadFavicon = multer({
+  storage: createStorage('uploads/favicons'),
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['.ico', '.png', '.svg', '.gif'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowed.includes(ext)) cb(null, true);
+    else cb(new AppError('Only ICO, PNG, SVG or GIF files allowed for favicon', 400));
+  },
+  limits: { fileSize: 1 * 1024 * 1024 },
+});
+
 export const uploadProfilePhoto = multer({
   storage: createStorage('uploads/profiles'),
   fileFilter: imageFilter,

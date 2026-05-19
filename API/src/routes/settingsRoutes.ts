@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import {
-  getAppSettings, updateAppSettings, uploadLogo, uploadFont,
+  getAppSettings, updateAppSettings, uploadLogo, uploadFont, uploadFavicon,
   getRoles, createRole, updateRole, deleteRole, cloneRole, getPermissions,
   getColumnDefinitions, upsertColumnDefinition, deleteColumnDefinition, reorderColumns,
   getAuditLogs, getNotifications, markNotificationRead, markAllNotificationsRead,
   uploadCustomFieldFiles,
 } from '../controllers/settingsController';
 import { authenticate, requirePermission, requireSuperAdmin } from '../middleware/authMiddleware';
-import { uploadLogo as uploadLogoMiddleware, uploadFont as uploadFontMiddleware, uploadCustomFiles } from '../middleware/uploadMiddleware';
+import { uploadLogo as uploadLogoMiddleware, uploadFont as uploadFontMiddleware, uploadFavicon as uploadFaviconMiddleware, uploadCustomFiles } from '../middleware/uploadMiddleware';
 
 const router = Router();
 
@@ -17,6 +17,7 @@ router.use(authenticate);
 router.get('/app', requirePermission('settings', 'view'), getAppSettings);
 router.put('/app', requireSuperAdmin, uploadLogoMiddleware.single('logo'), updateAppSettings);
 router.post('/app/logo', requireSuperAdmin, uploadLogoMiddleware.single('logo'), uploadLogo);
+router.post('/app/favicon', requireSuperAdmin, uploadFaviconMiddleware.single('favicon'), uploadFavicon);
 router.post('/app/font', requireSuperAdmin, uploadFontMiddleware.single('font'), uploadFont);
 
 // Roles

@@ -13,6 +13,10 @@ export const settingsService = {
     api.post<ApiResponse<{ logoPath: string }>>('/settings/app/logo', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
+  uploadFavicon: (formData: FormData) =>
+    api.post<ApiResponse<{ faviconPath: string }>>('/settings/app/favicon', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
   uploadFont: (formData: FormData) =>
     api.post<ApiResponse<{ fontName: string; fontPath: string }>>('/settings/app/font', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },

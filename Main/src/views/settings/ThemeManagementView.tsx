@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Save, Upload, Palette, Type } from 'lucide-react';
+import { Save, Upload, Palette, Type, Globe } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import { useThemeStore } from '../../stores/themeStore';
+import { useAuthStore } from '../../stores/authStore';
 import { settingsService } from '../../services/settingsService';
 import toast from 'react-hot-toast';
 
@@ -17,9 +18,13 @@ const PRESET_PALETTES = [
 ];
 
 export default function ThemeManagementView() {
-  const { isDark, primaryColor: storePrimary, sidebarColor: storeSidebar, fontFamily, appName, appLogo, setTheme, toggleDark } = useThemeStore();
+  const { isDark, primaryColor: storePrimary, sidebarColor: storeSidebar, fontFamily, appName, appLogo, appFavicon, setTheme, toggleDark } = useThemeStore();
+  const { user } = useAuthStore();
+  const isSuperAdmin = user?.isSuperAdmin === true;
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [faviconFile, setFaviconFile] = useState<File | null>(null);
+  const [faviconPreview, setFaviconPreview] = useState<string | null>(null);
   const [primaryColor, setPrimaryColor] = useState(storePrimary || '#1E40AF');
   const [sidebarColor, setSidebarColor] = useState(storeSidebar || '#0F172A');
   const [nameValue, setNameValue] = useState(appName || 'HR Suite');
@@ -43,6 +48,32 @@ export default function ThemeManagementView() {
         setLogoPreview(URL.createObjectURL(files[0]));
       }
     },
+  });
+
+  const { getRootProps: getFaviconProps, getInputProps: getFaviconInput } = useDropzone({
+    accept: { 'image/*': [], 'image/x-icon': ['.ico'] },
+    maxFiles: 1,
+    onDrop: (files) => {
+      if (files[0]) {
+        setFaviconFile(files[0]);
+        setFaviconPreview(URL.createObjectURL(files[0]));
+      }
+    },
+  });
+
+  const uploadFaviconMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const fd = new FormData();
+      fd.append('favicon', file);
+      return settingsService.uploadFavicon(fd);
+    },
+    onSuccess: (res) => {
+      const faviconPath = res.data.data?.faviconPath;
+      if (faviconPath) setTheme({ appFavicon: faviconPath });
+      setFaviconFile(null);
+      toast.success('Favicon updated — visible in browser tab');
+    },
+    onError: () => toast.error('Favicon upload failed'),
   });
 
   const saveSettingsMutation = useMutation({
@@ -157,6 +188,53 @@ export default function ThemeManagementView() {
             </div>
           </div>
         </div>
+
+        {/* Favicon Upload — super admin only */}
+        {isSuperAdmin && (
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-700">
+            <div className="flex items-center gap-2 mb-3">
+              <Globe size={15} className="text-primary-600" />
+              <label className="form-label mb-0">Browser Tab Favicon</label>
+            </div>
+            <div className="flex items-start gap-4">
+              <div
+                {...getFaviconProps()}
+                className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-4 text-center cursor-pointer hover:border-primary-400 transition-colors w-40 flex-shrink-0"
+              >
+                <input {...getFaviconInput()} />
+                {faviconPreview || appFavicon ? (
+                  <img
+                    src={faviconPreview || `/${appFavicon}`}
+                    alt="Favicon"
+                    className="w-10 h-10 mx-auto object-contain mb-1 rounded"
+                  />
+                ) : (
+                  <div>
+                    <div className="w-10 h-10 mx-auto mb-1 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-sm">HR</div>
+                    <p className="text-xs text-slate-500">Default</p>
+                  </div>
+                )}
+                <p className="text-[10px] text-slate-400 mt-1">ICO, PNG, SVG</p>
+              </div>
+              <div className="flex-1">
+                <p className="text-sm text-slate-600 dark:text-slate-300 mb-1">Shown in the browser tab and bookmarks.</p>
+                <p className="text-xs text-slate-400 mb-3">Recommended: 32×32px ICO or 64×64px PNG. Max 1 MB.</p>
+                {faviconFile && (
+                  <button
+                    onClick={() => uploadFaviconMutation.mutate(faviconFile)}
+                    disabled={uploadFaviconMutation.isPending}
+                    className="btn-primary text-sm"
+                  >
+                    {uploadFaviconMutation.isPending
+                      ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      : <Globe size={14} />}
+                    Upload Favicon
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Color Palette */}

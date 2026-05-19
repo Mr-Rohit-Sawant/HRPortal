@@ -7,6 +7,12 @@ import App from './App';
 import './index.css';
 import './i18n';
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {/* sw registration failed silently */});
+  });
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

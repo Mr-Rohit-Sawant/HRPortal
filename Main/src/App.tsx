@@ -5,6 +5,7 @@ import { useAuthStore } from './stores/authStore';
 import { useThemeStore } from './stores/themeStore';
 import { authService } from './services/authService';
 import { settingsService } from './services/settingsService';
+import InstallPrompt from './components/common/InstallPrompt';
 
 export default function App() {
   const { setUser, setLoading } = useAuthStore();
@@ -21,6 +22,7 @@ export default function App() {
           setTheme({
             appName: s.appName,
             appLogo: s.logo,
+            appFavicon: s.favicon,
             primaryColor: s.primaryColor,
             sidebarColor: s.sidebarColor,
             fontFamily: s.fontFamily,
@@ -68,5 +70,10 @@ export default function App() {
     );
   }
 
-  return <AppRouter />;
+  return (
+    <>
+      <AppRouter />
+      <InstallPrompt />
+    </>
+  );
 }

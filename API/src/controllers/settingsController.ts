@@ -14,6 +14,7 @@ function settingsMapToResponse(map: Record<string, string | null>) {
     fontFamily: map['font_family'] ?? 'Inter',
     accentColor: map['accent_color'] ?? '#3B82F6',
     logo: map['app_logo'] ?? '',
+    favicon: map['app_favicon'] ?? '',
   };
 }
 
@@ -89,6 +90,26 @@ export const uploadLogo = async (req: Request, res: Response) => {
   });
 
   res.json({ success: true, data: { logoPath } });
+};
+
+export const uploadFavicon = async (req: Request, res: Response) => {
+  if (!req.file) throw new AppError('No favicon file uploaded', 400);
+
+  const faviconPath = `uploads/favicons/${req.file.filename}`;
+
+  const existing = await prisma.appSetting.findUnique({ where: { key: 'app_favicon' } });
+  if (existing?.value) {
+    const oldPath = path.join(process.cwd(), existing.value);
+    if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+  }
+
+  await prisma.appSetting.upsert({
+    where: { key: 'app_favicon' },
+    update: { value: faviconPath },
+    create: { key: 'app_favicon', value: faviconPath, category: 'branding' },
+  });
+
+  res.json({ success: true, data: { faviconPath } });
 };
 
 export const uploadFont = async (req: Request, res: Response) => {
