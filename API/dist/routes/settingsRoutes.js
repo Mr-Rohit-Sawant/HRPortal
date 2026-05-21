@@ -10,6 +10,7 @@ router.use(authMiddleware_1.authenticate);
 router.get('/app', (0, authMiddleware_1.requirePermission)('settings', 'view'), settingsController_1.getAppSettings);
 router.put('/app', authMiddleware_1.requireSuperAdmin, uploadMiddleware_1.uploadLogo.single('logo'), settingsController_1.updateAppSettings);
 router.post('/app/logo', authMiddleware_1.requireSuperAdmin, uploadMiddleware_1.uploadLogo.single('logo'), settingsController_1.uploadLogo);
+router.post('/app/favicon', authMiddleware_1.requireSuperAdmin, uploadMiddleware_1.uploadFavicon.single('favicon'), settingsController_1.uploadFavicon);
 router.post('/app/font', authMiddleware_1.requireSuperAdmin, uploadMiddleware_1.uploadFont.single('font'), settingsController_1.uploadFont);
 // Roles
 router.get('/roles', (0, authMiddleware_1.requirePermission)('settings', 'roles'), settingsController_1.getRoles);

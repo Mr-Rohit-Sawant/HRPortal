@@ -1,26 +1,35 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requireAdminOrSuperAdmin = exports.requireSuperAdmin = exports.requirePermission = exports.authenticate = void 0;
+exports.requireAdminOrSuperAdmin = exports.requireSuperAdmin = exports.requirePermission = exports.invalidateAuthToken = exports.authenticate = void 0;
 const jwt_1 = require("../utils/jwt");
 const errorMiddleware_1 = require("./errorMiddleware");
 const app_1 = require("../app");
+const cache_1 = require("../utils/cache");
 const authenticate = async (req, _res, next) => {
     try {
         const token = req.cookies?.access_token;
         if (!token)
             throw new errorMiddleware_1.AppError('Authentication required', 401);
         const payload = (0, jwt_1.verifyAccessToken)(token);
+        // Cache hit — skip all DB queries for this request
+        const cached = cache_1.authCache.get(`auth:${token}`);
+        if (cached) {
+            req.user = cached;
+            return next();
+        }
+        // Cache miss — fetch user + permissions + business (one DB round-trip each)
         const user = await app_1.prisma.user.findUnique({
             where: { id: payload.userId },
-            include: {
-                role: { include: { permissions: { include: { permission: true } } } },
+            select: {
+                id: true, status: true, businessId: true,
+                role: { select: { name: true, permissions: { select: { permission: { select: { module: true, action: true } } } } } },
             },
         });
         if (!user || user.status !== 'ACTIVE') {
             throw new errorMiddleware_1.AppError('Account is inactive or not found', 401);
         }
         const permissions = user.role.permissions.map((rp) => `${rp.permission.module}:${rp.permission.action}`);
-        // Block login if the user's business is disabled or removed (non-super-admins only)
+        // Check business status for non-super-admins
         if (!payload.isSuperAdmin && user.businessId) {
             const business = await app_1.prisma.business.findUnique({
                 where: { id: user.businessId },
@@ -33,7 +42,9 @@ const authenticate = async (req, _res, next) => {
                 throw new errorMiddleware_1.AppError('Business account has been removed.', 403);
             }
         }
-        req.user = { ...payload, permissions, businessId: user.businessId ?? null };
+        const userData = { ...payload, permissions, businessId: user.businessId ?? null };
+        cache_1.authCache.set(`auth:${token}`, userData, cache_1.AUTH_TTL);
+        req.user = userData;
         next();
     }
     catch (err) {
@@ -41,6 +52,9 @@ const authenticate = async (req, _res, next) => {
     }
 };
 exports.authenticate = authenticate;
+// Call on logout to immediately invalidate the cached session
+const invalidateAuthToken = (token) => cache_1.authCache.del(`auth:${token}`);
+exports.invalidateAuthToken = invalidateAuthToken;
 const requirePermission = (module, action) => {
     return (req, _res, next) => {
         if (!req.user)

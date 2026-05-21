@@ -10,6 +10,7 @@ const jwt_1 = require("../utils/jwt");
 const helpers_1 = require("../utils/helpers");
 const errorMiddleware_1 = require("../middleware/errorMiddleware");
 const emailService_1 = require("../services/emailService");
+const authMiddleware_1 = require("../middleware/authMiddleware");
 const login = async (req, res) => {
     const { email, password, rememberMe } = req.body;
     console.log('LOGIN ATTEMPT:', { email, passwordLen: password?.length });
@@ -71,6 +72,9 @@ const login = async (req, res) => {
 };
 exports.login = login;
 const logout = async (req, res) => {
+    const accessToken = req.cookies?.access_token;
+    if (accessToken)
+        (0, authMiddleware_1.invalidateAuthToken)(accessToken);
     if (req.user) {
         await app_1.prisma.user.update({
             where: { id: req.user.userId },

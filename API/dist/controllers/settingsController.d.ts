@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
-export declare const getAppSettings: (_req: Request, res: Response) => Promise<void>;
+export declare const getAppSettings: (_req: Request, res: Response) => Promise<Response<any, Record<string, any>> | undefined>;
 export declare const updateAppSettings: (req: Request, res: Response) => Promise<void>;
 export declare const uploadLogo: (req: Request, res: Response) => Promise<void>;
+export declare const uploadFavicon: (req: Request, res: Response) => Promise<void>;
 export declare const uploadFont: (req: Request, res: Response) => Promise<void>;
 export declare const getRoles: (_req: Request, res: Response) => Promise<void>;
 export declare const createRole: (req: Request, res: Response) => Promise<void>;

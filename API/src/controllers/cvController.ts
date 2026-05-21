@@ -309,6 +309,7 @@ export const bulkImportCVs = async (req: Request, res: Response) => {
 };
 
 async function processBulkCVs(files: Express.Multer.File[], userId: string | undefined, jobId: string) {
+  (global as any).bulkImportResults = (global as any).bulkImportResults || {};
   const results: any[] = [];
 
   for (const file of files) {
@@ -363,20 +364,24 @@ async function processBulkCVs(files: Express.Multer.File[], userId: string | und
     }
   }
 
-  // Store results in a temp place (in production, use Redis/DB)
-  (global as any).bulkImportResults = (global as any).bulkImportResults || {};
-  (global as any).bulkImportResults[jobId] = results;
+  const store = (global as any).bulkImportResults as Record<string, { results: any[]; expiresAt: number }>;
+  store[jobId] = { results, expiresAt: Date.now() + 60 * 60 * 1000 };
+
+  // Purge expired jobs to prevent unbounded memory growth
+  for (const key of Object.keys(store)) {
+    if (Date.now() > store[key].expiresAt) delete store[key];
+  }
 }
 
 export const getBulkImportStatus = async (req: Request, res: Response) => {
   const { jobId } = req.params;
-  const results = (global as any).bulkImportResults?.[jobId];
+  const entry = (global as any).bulkImportResults?.[jobId];
 
-  if (!results) {
+  if (!entry) {
     return res.json({ success: true, data: { status: 'processing', results: [] } });
   }
 
-  res.json({ success: true, data: { status: 'completed', results } });
+  res.json({ success: true, data: { status: 'completed', results: entry.results } });
 };
 
 export const downloadCV = async (req: Request, res: Response) => {

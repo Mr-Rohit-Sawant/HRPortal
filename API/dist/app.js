@@ -28,6 +28,8 @@ const errorMiddleware_1 = require("./middleware/errorMiddleware");
 exports.prisma = new client_1.PrismaClient({
     log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
 });
+// Warm the connection pool on startup — eliminates cold-connect latency on first requests
+exports.prisma.$connect().catch(() => { });
 const app = (0, express_1.default)();
 // Security
 app.use((0, helmet_1.default)({

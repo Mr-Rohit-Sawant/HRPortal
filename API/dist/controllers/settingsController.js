@@ -3,10 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadCustomFieldFiles = exports.markAllNotificationsRead = exports.markNotificationRead = exports.getNotifications = exports.getAuditLogs = exports.reorderColumns = exports.deleteColumnDefinition = exports.upsertColumnDefinition = exports.getColumnDefinitions = exports.getPermissions = exports.cloneRole = exports.deleteRole = exports.updateRole = exports.createRole = exports.getRoles = exports.uploadFont = exports.uploadLogo = exports.updateAppSettings = exports.getAppSettings = void 0;
+exports.uploadCustomFieldFiles = exports.markAllNotificationsRead = exports.markNotificationRead = exports.getNotifications = exports.getAuditLogs = exports.reorderColumns = exports.deleteColumnDefinition = exports.upsertColumnDefinition = exports.getColumnDefinitions = exports.getPermissions = exports.cloneRole = exports.deleteRole = exports.updateRole = exports.createRole = exports.getRoles = exports.uploadFont = exports.uploadFavicon = exports.uploadLogo = exports.updateAppSettings = exports.getAppSettings = void 0;
 const app_1 = require("../app");
 const errorMiddleware_1 = require("../middleware/errorMiddleware");
 const helpers_1 = require("../utils/helpers");
+const cache_1 = require("../utils/cache");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 function settingsMapToResponse(map) {
@@ -17,13 +18,24 @@ function settingsMapToResponse(map) {
         fontFamily: map['font_family'] ?? 'Inter',
         accentColor: map['accent_color'] ?? '#3B82F6',
         logo: map['app_logo'] ?? '',
+        favicon: map['app_favicon'] ?? '',
     };
+}
+const SETTINGS_CACHE_KEY = 'app_settings';
+async function fetchAndCacheSettings() {
+    const settings = await app_1.prisma.appSetting.findMany();
+    const map = settings.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {});
+    const data = settingsMapToResponse(map);
+    cache_1.settingsCache.set(SETTINGS_CACHE_KEY, data, cache_1.SETTINGS_TTL);
+    return data;
 }
 // --- Theme & App Settings ---
 const getAppSettings = async (_req, res) => {
-    const settings = await app_1.prisma.appSetting.findMany();
-    const map = settings.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {});
-    res.json({ success: true, data: settingsMapToResponse(map) });
+    const cached = cache_1.settingsCache.get(SETTINGS_CACHE_KEY);
+    if (cached)
+        return res.json({ success: true, data: cached });
+    const data = await fetchAndCacheSettings();
+    res.json({ success: true, data });
 };
 exports.getAppSettings = getAppSettings;
 const updateAppSettings = async (req, res) => {
@@ -60,9 +72,8 @@ const updateAppSettings = async (req, res) => {
     await app_1.prisma.auditLog.create({
         data: { userId: req.user?.userId, userEmail: req.user?.email, action: 'UPDATE', module: 'settings', newValues: updates },
     });
-    const allSettings = await app_1.prisma.appSetting.findMany();
-    const map = allSettings.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {});
-    res.json({ success: true, data: settingsMapToResponse(map) });
+    const data = await fetchAndCacheSettings();
+    res.json({ success: true, data });
 };
 exports.updateAppSettings = updateAppSettings;
 const uploadLogo = async (req, res) => {
@@ -80,9 +91,29 @@ const uploadLogo = async (req, res) => {
         update: { value: logoPath },
         create: { key: 'app_logo', value: logoPath, category: 'branding' },
     });
+    cache_1.settingsCache.del(SETTINGS_CACHE_KEY);
     res.json({ success: true, data: { logoPath } });
 };
 exports.uploadLogo = uploadLogo;
+const uploadFavicon = async (req, res) => {
+    if (!req.file)
+        throw new errorMiddleware_1.AppError('No favicon file uploaded', 400);
+    const faviconPath = `uploads/favicons/${req.file.filename}`;
+    const existing = await app_1.prisma.appSetting.findUnique({ where: { key: 'app_favicon' } });
+    if (existing?.value) {
+        const oldPath = path_1.default.join(process.cwd(), existing.value);
+        if (fs_1.default.existsSync(oldPath))
+            fs_1.default.unlinkSync(oldPath);
+    }
+    await app_1.prisma.appSetting.upsert({
+        where: { key: 'app_favicon' },
+        update: { value: faviconPath },
+        create: { key: 'app_favicon', value: faviconPath, category: 'branding' },
+    });
+    cache_1.settingsCache.del(SETTINGS_CACHE_KEY);
+    res.json({ success: true, data: { faviconPath } });
+};
+exports.uploadFavicon = uploadFavicon;
 const uploadFont = async (req, res) => {
     if (!req.file)
         throw new errorMiddleware_1.AppError('No font file uploaded', 400);

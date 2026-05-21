@@ -11,6 +11,7 @@ declare global {
     }
 }
 export declare const authenticate: (req: Request, _res: Response, next: NextFunction) => Promise<void>;
+export declare const invalidateAuthToken: (token: string) => void;
 export declare const requirePermission: (module: string, action: string) => (req: Request, _res: Response, next: NextFunction) => void;
 export declare const requireSuperAdmin: (req: Request, _res: Response, next: NextFunction) => void;
 export declare const requireAdminOrSuperAdmin: (req: Request, _res: Response, next: NextFunction) => void;

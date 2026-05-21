@@ -37,6 +37,7 @@ async function initElasticsearch() {
                     gender: { type: 'keyword' },
                     status: { type: 'keyword' },
                     isPriority: { type: 'boolean' },
+                    rawText: { type: 'text', analyzer: 'standard' },
                 },
             },
             settings: { analysis: { analyzer: { default: { type: 'standard' } } } },
@@ -45,6 +46,12 @@ async function initElasticsearch() {
         if (exists?.status !== 200) {
             await esRequest('PUT', `/${CV_INDEX}`, mapping);
             logger_1.logger.info(`Elasticsearch index '${CV_INDEX}' created`);
+        }
+        else {
+            // Ensure rawText field is in the mapping for existing index
+            await esRequest('PUT', `/${CV_INDEX}/_mapping`, {
+                properties: { rawText: { type: 'text', analyzer: 'standard' } },
+            });
         }
     }
     catch (err) {
@@ -71,6 +78,7 @@ async function indexCandidate(candidate) {
             gender: candidate.gender,
             status: candidate.status,
             isPriority: candidate.isPriority,
+            rawText: candidate.rawText || '',
         });
     }
     catch {
@@ -95,6 +103,7 @@ async function searchCandidates(query, filters = {}) {
                         'firstName^3', 'lastName^3', 'email^2', 'phone^2',
                         'currentDesignation^2', 'currentCompany^2', 'skills^2',
                         'technologyStack^2', 'currentLocation', 'highestQualification',
+                        'rawText',
                     ],
                     type: 'best_fields',
                     fuzziness: 'AUTO',

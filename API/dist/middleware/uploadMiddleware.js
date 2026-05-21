@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadEmployeeFiles = exports.uploadBugReport = exports.uploadCustomFiles = exports.uploadDocument = exports.uploadFont = exports.uploadProfilePhoto = exports.uploadLogo = exports.uploadBulkCV = exports.uploadCV = void 0;
+exports.uploadEmployeeFiles = exports.uploadBugReport = exports.uploadCustomFiles = exports.uploadDocument = exports.uploadFont = exports.uploadProfilePhoto = exports.uploadFavicon = exports.uploadLogo = exports.uploadBulkCV = exports.uploadCV = void 0;
 const multer_1 = __importDefault(require("multer"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
@@ -69,6 +69,18 @@ exports.uploadLogo = (0, multer_1.default)({
     storage: createStorage('uploads/logos'),
     fileFilter: imageFilter,
     limits: { fileSize: 2 * 1024 * 1024 },
+});
+exports.uploadFavicon = (0, multer_1.default)({
+    storage: createStorage('uploads/favicons'),
+    fileFilter: (_req, file, cb) => {
+        const allowed = ['.ico', '.png', '.svg', '.gif'];
+        const ext = path_1.default.extname(file.originalname).toLowerCase();
+        if (allowed.includes(ext))
+            cb(null, true);
+        else
+            cb(new errorMiddleware_1.AppError('Only ICO, PNG, SVG or GIF files allowed for favicon', 400));
+    },
+    limits: { fileSize: 1 * 1024 * 1024 },
 });
 exports.uploadProfilePhoto = (0, multer_1.default)({
     storage: createStorage('uploads/profiles'),

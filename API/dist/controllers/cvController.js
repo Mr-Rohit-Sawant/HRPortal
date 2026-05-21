@@ -102,6 +102,7 @@ const buildMySQLWhere = (query) => {
             { nationality: { contains: s } },
             { source: { contains: s } },
             { notes: { contains: s } },
+            { rawText: { contains: s } },
         ];
     }
     return where;
@@ -124,6 +125,15 @@ const createCandidate = async (req, res) => {
     const data = req.body;
     const cvFile = req.file;
     const searchVector = (0, cvParserService_1.buildSearchVector)(data);
+    let rawText = null;
+    if (cvFile) {
+        try {
+            rawText = await (0, cvParserService_1.extractTextFromFile)(path_1.default.join(process.cwd(), 'uploads', 'cvs', cvFile.filename));
+        }
+        catch {
+            rawText = null;
+        }
+    }
     // Strip any unknown keys that would cause Prisma to throw
     const { firstName, lastName, email, phone, alternatePhone, gender, dateOfBirth, currentLocation, preferredLocations, religion, caste, languages, nationality, country, state, city, currentDesignation, currentCompany, totalExperience, currentCTC, expectedCTC, noticePeriod, currentlyEmployed, highestQualification, specialization, university, passingYear, educationDetails, experienceDetails, skills, certifications, technologyStack, status, isPriority, source, notes, customFields, businessId: bodyBusinessId, } = data;
     const candidate = await app_1.prisma.candidate.create({
@@ -154,6 +164,7 @@ const createCandidate = async (req, res) => {
             cvFile: cvFile ? `uploads/cvs/${cvFile.filename}` : null,
             cvOriginalName: cvFile?.originalname,
             searchVector,
+            rawText,
             createdBy: req.user?.userId,
             businessId: req.user?.isSuperAdmin ? (bodyBusinessId || undefined) : (req.user?.businessId ?? undefined),
         },
@@ -215,6 +226,12 @@ const updateCandidate = async (req, res) => {
     if (cvFile) {
         updates.cvFile = `uploads/cvs/${cvFile.filename}`;
         updates.cvOriginalName = cvFile.originalname;
+        try {
+            updates.rawText = await (0, cvParserService_1.extractTextFromFile)(path_1.default.join(process.cwd(), 'uploads', 'cvs', cvFile.filename));
+        }
+        catch {
+            updates.rawText = null;
+        }
         if (existing.cvFile) {
             const oldPath = path_1.default.join(process.cwd(), existing.cvFile);
             if (fs_1.default.existsSync(oldPath))
@@ -274,10 +291,11 @@ const bulkImportCVs = async (req, res) => {
 };
 exports.bulkImportCVs = bulkImportCVs;
 async function processBulkCVs(files, userId, jobId) {
+    global.bulkImportResults = global.bulkImportResults || {};
     const results = [];
     for (const file of files) {
         try {
-            const { data, confidence } = await (0, cvParserService_1.parseCVWithAI)(path_1.default.join(process.cwd(), 'uploads', 'cvs', file.filename), file.originalname);
+            const { data, rawText, confidence } = await (0, cvParserService_1.parseCVWithAI)(path_1.default.join(process.cwd(), 'uploads', 'cvs', file.filename), file.originalname);
             const candidate = await app_1.prisma.candidate.create({
                 data: {
                     firstName: data.firstName || 'Unknown',
@@ -311,6 +329,7 @@ async function processBulkCVs(files, userId, jobId) {
                     cvFile: `uploads/cvs/${file.filename}`,
                     cvOriginalName: file.originalname,
                     searchVector: (0, cvParserService_1.buildSearchVector)(data),
+                    rawText: rawText || null,
                     createdBy: userId,
                 },
             });
@@ -321,17 +340,21 @@ async function processBulkCVs(files, userId, jobId) {
             results.push({ file: file.originalname, status: 'error', error: error.message });
         }
     }
-    // Store results in a temp place (in production, use Redis/DB)
-    global.bulkImportResults = global.bulkImportResults || {};
-    global.bulkImportResults[jobId] = results;
+    const store = global.bulkImportResults;
+    store[jobId] = { results, expiresAt: Date.now() + 60 * 60 * 1000 };
+    // Purge expired jobs to prevent unbounded memory growth
+    for (const key of Object.keys(store)) {
+        if (Date.now() > store[key].expiresAt)
+            delete store[key];
+    }
 }
 const getBulkImportStatus = async (req, res) => {
     const { jobId } = req.params;
-    const results = global.bulkImportResults?.[jobId];
-    if (!results) {
+    const entry = global.bulkImportResults?.[jobId];
+    if (!entry) {
         return res.json({ success: true, data: { status: 'processing', results: [] } });
     }
-    res.json({ success: true, data: { status: 'completed', results } });
+    res.json({ success: true, data: { status: 'completed', results: entry.results } });
 };
 exports.getBulkImportStatus = getBulkImportStatus;
 const downloadCV = async (req, res) => {
