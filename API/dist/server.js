@@ -72,11 +72,13 @@ async function startServer() {
         // Don't exit — keep server alive so /api/debug shows the error
     }
 }
-process.on('SIGTERM', async () => {
-    logger_1.logger.info('SIGTERM received, shutting down gracefully');
+async function shutdown(signal) {
+    logger_1.logger.info(`${signal} received, shutting down gracefully`);
     await app_1.prisma.$disconnect();
     process.exit(0);
-});
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('unhandledRejection', (reason) => {
     logger_1.logger.error('Unhandled rejection:', reason);
 });

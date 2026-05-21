@@ -27,9 +27,6 @@ export const prisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
 });
 
-// Warm the connection pool on startup — eliminates cold-connect latency on first requests
-prisma.$connect().catch(() => {});
-
 const app = express();
 
 // Security

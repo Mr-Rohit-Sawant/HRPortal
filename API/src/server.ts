@@ -42,11 +42,14 @@ async function startServer() {
   }
 }
 
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down gracefully');
+async function shutdown(signal: string) {
+  logger.info(`${signal} received, shutting down gracefully`);
   await prisma.$disconnect();
   process.exit(0);
-});
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
 
 process.on('unhandledRejection', (reason) => {
   logger.error('Unhandled rejection:', reason);
