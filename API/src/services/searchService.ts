@@ -47,6 +47,7 @@ export async function initElasticsearch() {
           gender: { type: 'keyword' },
           status: { type: 'keyword' },
           isPriority: { type: 'boolean' },
+          rawText: { type: 'text', analyzer: 'standard' },
         },
       },
       settings: { analysis: { analyzer: { default: { type: 'standard' } } } },
@@ -56,6 +57,11 @@ export async function initElasticsearch() {
     if (exists?.status !== 200) {
       await esRequest('PUT', `/${CV_INDEX}`, mapping);
       logger.info(`Elasticsearch index '${CV_INDEX}' created`);
+    } else {
+      // Ensure rawText field is in the mapping for existing index
+      await esRequest('PUT', `/${CV_INDEX}/_mapping`, {
+        properties: { rawText: { type: 'text', analyzer: 'standard' } },
+      });
     }
   } catch (err) {
     logger.warn('Elasticsearch not available — search will use MySQL FULLTEXT fallback');
@@ -82,6 +88,7 @@ export async function indexCandidate(candidate: Record<string, any>) {
       gender: candidate.gender,
       status: candidate.status,
       isPriority: candidate.isPriority,
+      rawText: candidate.rawText || '',
     });
   } catch {
     // silently fail — MySQL fallback handles search
@@ -110,6 +117,7 @@ export async function searchCandidates(
             'firstName^3', 'lastName^3', 'email^2', 'phone^2',
             'currentDesignation^2', 'currentCompany^2', 'skills^2',
             'technologyStack^2', 'currentLocation', 'highestQualification',
+            'rawText',
           ],
           type: 'best_fields',
           fuzziness: 'AUTO',

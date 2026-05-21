@@ -1,0 +1,1114 @@
+{
+  "info": {
+    "name": "HR Recruitment System API",
+    "description": "Complete API documentation for the HR Recruitment System. Set `baseUrl` to your server (e.g. http://localhost:5000) and `authToken` after login.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000", "type": "string" },
+    { "key": "authToken", "value": "", "type": "string" }
+  ],
+  "item": [
+
+    {
+      "name": "🔐 Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [{ "listen": "test", "script": { "exec": ["const r = pm.response.json();", "if (r.data?.accessToken) pm.collectionVariables.set('authToken', r.data.accessToken);"], "type": "text/javascript" } }],
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"superadmin@hrapp.com\",\n  \"password\": \"Admin@123\"\n}" }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/auth/logout",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/auth/refresh",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{}" }
+          }
+        },
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/auth/me",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/auth/forgot-password",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"user@example.com\"\n}" }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/auth/reset-password",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"token\": \"<reset_token_from_email>\",\n  \"password\": \"NewPassword@123\"\n}" }
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/auth/change-password",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"OldPass@123\",\n  \"newPassword\": \"NewPass@123\"\n}" }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📊 Dashboard",
+      "item": [
+        {
+          "name": "Get Stats",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/dashboard/stats",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Recruitment Chart",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/dashboard/recruitment-chart?period=6M", "host": ["{{baseUrl}}"], "path": ["api","dashboard","recruitment-chart"], "query": [{ "key": "period", "value": "6M", "description": "6M or 12M" }] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Revenue Chart",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/api/dashboard/revenue-chart?period=6M", "host": ["{{baseUrl}}"], "path": ["api","dashboard","revenue-chart"], "query": [{ "key": "period", "value": "6M" }] },
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "📄 CV Database",
+      "item": [
+        {
+          "name": "List Candidates",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/cv?page=1&limit=10&search=&gender=&status=&isPriority=&minExp=&maxExp=&minCTC=&maxCTC=&location=&qualification=&sortBy=createdAt&sortDir=desc",
+              "host": ["{{baseUrl}}"], "path": ["api","cv"],
+              "query": [
+                { "key": "page", "value": "1" }, { "key": "limit", "value": "10" },
+                { "key": "search", "value": "", "description": "Searches name, email, skills, designation, company, AND full PDF text" },
+                { "key": "gender", "value": "", "description": "MALE | FEMALE | OTHER" },
+                { "key": "status", "value": "", "description": "NEW | ACTIVE | SHORTLISTED | PLACED | REJECTED" },
+                { "key": "isPriority", "value": "" }, { "key": "minExp", "value": "" }, { "key": "maxExp", "value": "" },
+                { "key": "minCTC", "value": "" }, { "key": "maxCTC", "value": "" },
+                { "key": "location", "value": "" }, { "key": "qualification", "value": "" },
+                { "key": "sortBy", "value": "createdAt" }, { "key": "sortDir", "value": "desc" }
+              ]
+            },
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Get Candidate by ID",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/cv/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Create Candidate (with CV file)",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/cv",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "firstName", "value": "John", "type": "text" },
+                { "key": "lastName", "value": "Doe", "type": "text" },
+                { "key": "email", "value": "john.doe@example.com", "type": "text" },
+                { "key": "phone", "value": "9876543210", "type": "text" },
+                { "key": "gender", "value": "MALE", "type": "text" },
+                { "key": "currentDesignation", "value": "Software Engineer", "type": "text" },
+                { "key": "currentCompany", "value": "TechCorp", "type": "text" },
+                { "key": "totalExperience", "value": "5", "type": "text" },
+                { "key": "currentCTC", "value": "800000", "type": "text" },
+                { "key": "expectedCTC", "value": "1000000", "type": "text" },
+                { "key": "noticePeriod", "value": "30", "type": "text" },
+                { "key": "currentLocation", "value": "Mumbai", "type": "text" },
+                { "key": "highestQualification", "value": "B.Tech", "type": "text" },
+                { "key": "skills", "value": "[\"React\",\"Node.js\",\"TypeScript\"]", "type": "text" },
+                { "key": "technologyStack", "value": "[\"MERN\",\"AWS\"]", "type": "text" },
+                { "key": "status", "value": "NEW", "type": "text" },
+                { "key": "source", "value": "LinkedIn", "type": "text" },
+                { "key": "cvFile", "type": "file", "src": "", "description": "PDF or DOCX file (max 10MB). Raw text auto-extracted for search." }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Candidate",
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/api/cv/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "firstName", "value": "John", "type": "text" },
+                { "key": "currentCTC", "value": "900000", "type": "text" },
+                { "key": "cvFile", "type": "file", "src": "", "description": "Optional — replaces existing CV file" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Candidate",
+          "request": {
+            "method": "DELETE", "url": "{{baseUrl}}/api/cv/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Toggle Priority",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/cv/:id/priority",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Update Custom Fields",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/cv/:id/custom-fields",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fieldName\": \"referred_by\",\n  \"value\": \"HR Team\"\n}" }
+          }
+        },
+        {
+          "name": "Download CV File",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/cv/:id/download",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Bulk Import CVs",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/cv/bulk-import",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "files", "type": "file", "src": "", "description": "Upload multiple PDF/DOCX files (max 50 at once). AI parses each CV and raw text is stored for search." }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Bulk Import Status",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/cv/bulk-status/:jobId",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "💼 Job Openings",
+      "item": [
+        {
+          "name": "List Jobs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/jobs?page=1&limit=10&search=&status=&clientId=&sortBy=createdAt&sortDir=desc",
+              "host": ["{{baseUrl}}"], "path": ["api","jobs"],
+              "query": [
+                { "key": "page", "value": "1" }, { "key": "limit", "value": "10" },
+                { "key": "search", "value": "" }, { "key": "status", "value": "" },
+                { "key": "clientId", "value": "" }, { "key": "sortBy", "value": "createdAt" }, { "key": "sortDir", "value": "desc" }
+              ]
+            },
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Get Job by ID",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/jobs/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Create Job",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/jobs",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "jobTitle", "value": "Senior React Developer", "type": "text" },
+                { "key": "clientId", "value": "<client_id>", "type": "text" },
+                { "key": "location", "value": "Mumbai", "type": "text" },
+                { "key": "jobType", "value": "FULL_TIME", "type": "text" },
+                { "key": "experienceMin", "value": "3", "type": "text" },
+                { "key": "experienceMax", "value": "7", "type": "text" },
+                { "key": "ctcMin", "value": "800000", "type": "text" },
+                { "key": "ctcMax", "value": "1500000", "type": "text" },
+                { "key": "numberOfOpenings", "value": "2", "type": "text" },
+                { "key": "description", "value": "Looking for a senior React developer...", "type": "text" },
+                { "key": "skills", "value": "[\"React\",\"TypeScript\",\"Node.js\"]", "type": "text" },
+                { "key": "status", "value": "OPEN", "type": "text" },
+                { "key": "jdDocument", "type": "file", "src": "", "description": "Optional JD PDF" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Job",
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/api/jobs/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "jobTitle", "value": "Lead React Developer", "type": "text" },
+                { "key": "status", "value": "OPEN", "type": "text" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Job",
+          "request": {
+            "method": "DELETE", "url": "{{baseUrl}}/api/jobs/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Duplicate Job",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/jobs/:id/duplicate",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Close Job",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/jobs/:id/close",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Toggle Assignee",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/jobs/:id/assignees",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"userId\": \"<user_id>\"\n}" }
+          }
+        },
+        {
+          "name": "Import Jobs CSV",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/jobs/import-csv",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": { "mode": "formdata", "formdata": [{ "key": "file", "type": "file", "src": "" }] }
+          }
+        },
+        {
+          "name": "Update Custom Fields",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/jobs/:id/custom-fields",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fieldName\": \"priority_level\",\n  \"value\": \"High\"\n}" }
+          }
+        },
+        {
+          "name": "Start Replacement",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/jobs/:id/start-replacement",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"reason\": \"Candidate resigned\"\n}" }
+          }
+        },
+        {
+          "name": "Update PSR Columns",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/jobs/:id/psr-columns",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"columns\": [\"joiningDate\", \"salary\", \"offerStatus\"]\n}" }
+          }
+        },
+        {
+          "name": "Update Post-Selection Record",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/jobs/psr/:recordId",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"joiningDate\": \"2026-06-01\",\n  \"offeredSalary\": 900000\n}" }
+          }
+        },
+        {
+          "name": "Upload Offer Letter",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/jobs/psr/:recordId/offer-letter",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": { "mode": "formdata", "formdata": [{ "key": "offerLetter", "type": "file", "src": "" }] }
+          }
+        },
+        {
+          "name": "Add Interview Round",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/jobs/:id/rounds",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Technical Round 1\"\n}" }
+          }
+        },
+        {
+          "name": "Rename Round",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/jobs/rounds/:roundId",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"HR Round\"\n}" }
+          }
+        },
+        {
+          "name": "Update Round Columns",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/jobs/rounds/:roundId/columns",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"columns\": [\"interviewDate\", \"feedback\", \"result\"]\n}" }
+          }
+        },
+        {
+          "name": "Add Candidate to Round",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/jobs/rounds/:roundId/candidates",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"candidateId\": \"<candidate_id>\"\n}" }
+          }
+        },
+        {
+          "name": "Remove Candidate from Round",
+          "request": {
+            "method": "DELETE", "url": "{{baseUrl}}/api/jobs/rounds/:roundId/candidates/:candidateId",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Update Interview Slot",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/jobs/slots/:slotId",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"interviewDate\": \"2026-06-15\",\n  \"feedback\": \"Strong candidate\",\n  \"result\": \"SELECTED\"\n}" }
+          }
+        },
+        {
+          "name": "Update Slot Custom Field",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/jobs/slots/:slotId/custom-fields",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fieldName\": \"panel_name\",\n  \"value\": \"Rahul Sharma\"\n}" }
+          }
+        },
+        {
+          "name": "Bulk Update Slots",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/jobs/rounds/:roundId/slots/bulk",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"updates\": [\n    { \"slotId\": \"<id>\", \"result\": \"SELECTED\" },\n    { \"slotId\": \"<id>\", \"result\": \"REJECTED\" }\n  ]\n}" }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "👥 Employees",
+      "item": [
+        {
+          "name": "List Employees",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/employees?page=1&limit=10&search=&status=&roleId=",
+              "host": ["{{baseUrl}}"], "path": ["api","employees"],
+              "query": [
+                { "key": "page", "value": "1" }, { "key": "limit", "value": "10" },
+                { "key": "search", "value": "" }, { "key": "status", "value": "" }, { "key": "roleId", "value": "" }
+              ]
+            },
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Get Employee by ID",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/employees/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Create Employee",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/employees",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "firstName", "value": "Jane", "type": "text" },
+                { "key": "lastName", "value": "Smith", "type": "text" },
+                { "key": "email", "value": "jane.smith@company.com", "type": "text" },
+                { "key": "password", "value": "Employee@123", "type": "text" },
+                { "key": "phone", "value": "9876543210", "type": "text" },
+                { "key": "roleId", "value": "<role_id>", "type": "text" },
+                { "key": "department", "value": "Engineering", "type": "text" },
+                { "key": "designation", "value": "Developer", "type": "text" },
+                { "key": "profilePhoto", "type": "file", "src": "", "description": "Optional profile photo" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Employee",
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/api/employees/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "firstName", "value": "Jane", "type": "text" },
+                { "key": "department", "value": "Product", "type": "text" },
+                { "key": "profilePhoto", "type": "file", "src": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/api/employees/me",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "firstName", "value": "Jane", "type": "text" },
+                { "key": "phone", "value": "9123456789", "type": "text" },
+                { "key": "profilePhoto", "type": "file", "src": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Toggle Employee Status",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/employees/:id/status",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Reset Employee Password",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/employees/:id/reset-password",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"newPassword\": \"NewPass@123\"\n}" }
+          }
+        },
+        {
+          "name": "Update Custom Fields",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/employees/:id/custom-fields",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fieldName\": \"employee_code\",\n  \"value\": \"EMP-001\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Employee",
+          "request": {
+            "method": "DELETE", "url": "{{baseUrl}}/api/employees/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🏢 Clients",
+      "item": [
+        {
+          "name": "List Clients",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/clients?page=1&limit=10&search=&status=",
+              "host": ["{{baseUrl}}"], "path": ["api","clients"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }, { "key": "search", "value": "" }, { "key": "status", "value": "" }]
+            },
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Client Dropdown (ID + Name only)",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/clients/dropdown",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Get Client by ID",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/clients/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Create Client",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/clients",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"companyName\": \"Acme Corp\",\n  \"contactPersonName\": \"John Manager\",\n  \"contactEmail\": \"john@acme.com\",\n  \"contactPhone\": \"9876543210\",\n  \"industry\": \"Technology\",\n  \"address\": \"123 MG Road, Bangalore\",\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"country\": \"India\",\n  \"pincode\": \"560001\",\n  \"gstNumber\": \"29ABCDE1234F1Z5\",\n  \"panNumber\": \"ABCDE1234F\",\n  \"contractStartDate\": \"2026-01-01\",\n  \"contractEndDate\": \"2026-12-31\",\n  \"billingCurrency\": \"INR\",\n  \"paymentTerms\": \"Net 30\",\n  \"notes\": \"Key enterprise client\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Client",
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/api/clients/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"contactPhone\": \"9999999999\",\n  \"notes\": \"Updated notes\"\n}" }
+          }
+        },
+        {
+          "name": "Toggle Client Status",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/clients/:id/status",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Update Custom Fields",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/clients/:id/custom-fields",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"fieldName\": \"account_manager\",\n  \"value\": \"Rahul\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Client",
+          "request": {
+            "method": "DELETE", "url": "{{baseUrl}}/api/clients/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🧾 Invoices",
+      "item": [
+        {
+          "name": "List Invoices",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/invoices?page=1&limit=10&search=&status=&clientId=",
+              "host": ["{{baseUrl}}"], "path": ["api","invoices"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }, { "key": "search", "value": "" }, { "key": "status", "value": "" }, { "key": "clientId", "value": "" }]
+            },
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Get Invoice by ID",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/invoices/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Download Invoice PDF",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/invoices/:id/download",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Create Invoice",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/invoices",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientId\": \"<client_id>\",\n  \"invoiceNumber\": \"INV-2026-001\",\n  \"invoiceDate\": \"2026-05-21\",\n  \"dueDate\": \"2026-06-21\",\n  \"lineItems\": [\n    { \"description\": \"Recruitment fee - React Developer\", \"quantity\": 1, \"rate\": 50000 },\n    { \"description\": \"Background verification\", \"quantity\": 1, \"rate\": 5000 }\n  ],\n  \"taxPercent\": 18,\n  \"notes\": \"Payment due within 30 days\",\n  \"currency\": \"INR\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Invoice Status",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/invoices/:id/status",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"PAID\"\n}", "options": { "raw": { "language": "json" } } },
+            "description": "status: DRAFT | SENT | PAID | OVERDUE | CANCELLED"
+          }
+        },
+        {
+          "name": "Send Invoice to Client (Email)",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/invoices/:id/send",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Delete Invoice",
+          "request": {
+            "method": "DELETE", "url": "{{baseUrl}}/api/invoices/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "⚙️ Settings",
+      "item": [
+        {
+          "name": "Get App Settings",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/settings/app",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Update App Settings",
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/api/settings/app",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "appName", "value": "HR Recruitment System", "type": "text" },
+                { "key": "primaryColor", "value": "#1E40AF", "type": "text" },
+                { "key": "logo", "type": "file", "src": "" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Upload Logo",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/settings/app/logo",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": { "mode": "formdata", "formdata": [{ "key": "logo", "type": "file", "src": "" }] }
+          }
+        },
+        {
+          "name": "Upload Favicon",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/settings/app/favicon",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": { "mode": "formdata", "formdata": [{ "key": "favicon", "type": "file", "src": "" }] }
+          }
+        },
+        {
+          "name": "Upload Font",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/settings/app/font",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": { "mode": "formdata", "formdata": [{ "key": "font", "type": "file", "src": "" }] }
+          }
+        },
+        {
+          "name": "Get Roles",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/settings/roles",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Create Role",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/settings/roles",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Recruiter\",\n  \"permissions\": {\n    \"cv\": { \"view\": true, \"create\": true, \"update\": true, \"delete\": false },\n    \"jobs\": { \"view\": true, \"create\": false, \"update\": true, \"delete\": false },\n    \"employees\": { \"view\": false },\n    \"clients\": { \"view\": true },\n    \"invoices\": { \"view\": false },\n    \"dashboard\": { \"view\": true }\n  }\n}" }
+          }
+        },
+        {
+          "name": "Update Role",
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/api/settings/roles/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Senior Recruiter\",\n  \"permissions\": {\n    \"cv\": { \"view\": true, \"create\": true, \"update\": true, \"delete\": true }\n  }\n}" }
+          }
+        },
+        {
+          "name": "Delete Role",
+          "request": {
+            "method": "DELETE", "url": "{{baseUrl}}/api/settings/roles/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Clone Role",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/settings/roles/:id/clone",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Get All Permissions",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/settings/permissions",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Get Column Definitions",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/settings/columns",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Upsert Column Definition",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/settings/columns",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"module\": \"cv\",\n  \"columnKey\": \"referred_by\",\n  \"label\": \"Referred By\",\n  \"type\": \"text\",\n  \"isVisible\": true,\n  \"order\": 10\n}" }
+          }
+        },
+        {
+          "name": "Reorder Columns",
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/api/settings/columns/reorder",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"module\": \"cv\",\n  \"orderedIds\": [\"<col_id_1>\", \"<col_id_2>\", \"<col_id_3>\"]\n}" }
+          }
+        },
+        {
+          "name": "Delete Column",
+          "request": {
+            "method": "DELETE", "url": "{{baseUrl}}/api/settings/columns/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Get Audit Logs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/settings/audit?page=1&limit=20&module=&action=&userId=&from=&to=",
+              "host": ["{{baseUrl}}"], "path": ["api","settings","audit"],
+              "query": [
+                { "key": "page", "value": "1" }, { "key": "limit", "value": "20" },
+                { "key": "module", "value": "", "description": "cv | jobs | employees | clients | invoices" },
+                { "key": "action", "value": "", "description": "CREATE | UPDATE | DELETE" },
+                { "key": "userId", "value": "" }, { "key": "from", "value": "" }, { "key": "to", "value": "" }
+              ]
+            },
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Get System Notifications",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/settings/notifications",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/settings/notifications/:id/read",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Mark All Notifications Read",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/settings/notifications/read-all",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Upload Custom Field Files",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/settings/upload-custom-files",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": { "mode": "formdata", "formdata": [{ "key": "files", "type": "file", "src": "", "description": "Up to 20 files" }] }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🔔 User Notifications",
+      "item": [
+        {
+          "name": "Get Notifications",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/user-notifications?type=received&limit=20",
+              "host": ["{{baseUrl}}"], "path": ["api","user-notifications"],
+              "query": [{ "key": "type", "value": "received", "description": "received | sent" }, { "key": "limit", "value": "20" }]
+            },
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Create Notification",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/user-notifications",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title", "value": "New Opening Available", "type": "text" },
+                { "key": "description", "value": "A new React Developer position has been posted.", "type": "text" },
+                { "key": "recipientIds", "value": "[\"<user_id_1>\",\"<user_id_2>\"]", "type": "text", "description": "JSON array of user IDs. Empty = all users." },
+                { "key": "files", "type": "file", "src": "", "description": "Optional attachments (up to 10)" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Notification Read",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/user-notifications/:id/read",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Update Notification",
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/api/user-notifications/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Updated Title\",\n  \"description\": \"Updated body\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Notification",
+          "request": {
+            "method": "DELETE", "url": "{{baseUrl}}/api/user-notifications/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Get Notification Permissions",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/user-notifications/permissions",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Update Notification Permissions",
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/api/user-notifications/permissions",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"canCreate\": [\"<role_id_1>\", \"<role_id_2>\"],\n  \"canSendAll\": [\"<role_id_1>\"]\n}" }
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🏗️ Businesses",
+      "item": [
+        {
+          "name": "Get Businesses (SuperAdmin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/businesses?page=1&limit=10&search=",
+              "host": ["{{baseUrl}}"], "path": ["api","businesses"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "10" }, { "key": "search", "value": "" }]
+            },
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Businesses Dropdown",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/businesses/dropdown",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Get Business by ID",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/businesses/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Create Business",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/businesses",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Acme Recruitment Ltd\",\n  \"email\": \"admin@acme.com\",\n  \"phone\": \"9876543210\",\n  \"address\": \"123 Business Park, Mumbai\"\n}" }
+          }
+        },
+        {
+          "name": "Update Business",
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/api/businesses/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Acme Recruitment Ltd (Updated)\",\n  \"phone\": \"9999999999\"\n}" }
+          }
+        },
+        {
+          "name": "Toggle Business Status",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/businesses/:id/toggle-status",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Undo Delete Business",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/businesses/:id/undo-delete",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Delete Business",
+          "request": {
+            "method": "DELETE", "url": "{{baseUrl}}/api/businesses/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "🐛 Bug Reports",
+      "item": [
+        {
+          "name": "Submit Bug Report",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/bug-reports",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "title", "value": "Button not working on mobile", "type": "text" },
+                { "key": "description", "value": "The submit button on the Add CV form does not respond on iOS Safari.", "type": "text" },
+                { "key": "severity", "value": "HIGH", "type": "text", "description": "LOW | MEDIUM | HIGH | CRITICAL" },
+                { "key": "pageUrl", "value": "/cv-database/add", "type": "text" },
+                { "key": "files", "type": "file", "src": "", "description": "Screenshots (up to 10)" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "List Bug Reports (SuperAdmin)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/bug-reports?page=1&limit=20&status=&severity=",
+              "host": ["{{baseUrl}}"], "path": ["api","bug-reports"],
+              "query": [{ "key": "page", "value": "1" }, { "key": "limit", "value": "20" }, { "key": "status", "value": "" }, { "key": "severity", "value": "" }]
+            },
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Get Bug Report by ID",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/bug-reports/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Update Bug Report",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/bug-reports/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"statusLabelId\": \"<status_label_id>\",\n  \"adminNote\": \"Fixed in v1.2.3\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Bug Report",
+          "request": {
+            "method": "DELETE", "url": "{{baseUrl}}/api/bug-reports/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Get Bug Report Settings",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/bug-reports/settings",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Update Bug Report Settings",
+          "request": {
+            "method": "PUT", "url": "{{baseUrl}}/api/bug-reports/settings",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"isEnabled\": true,\n  \"notifyEmail\": \"admin@company.com\"\n}" }
+          }
+        },
+        {
+          "name": "Get Status Labels",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/bug-reports/status-labels",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        },
+        {
+          "name": "Create Status Label",
+          "request": {
+            "method": "POST", "url": "{{baseUrl}}/api/bug-reports/status-labels",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"label\": \"In Progress\",\n  \"color\": \"#F59E0B\"\n}" }
+          }
+        },
+        {
+          "name": "Update Status Label",
+          "request": {
+            "method": "PATCH", "url": "{{baseUrl}}/api/bug-reports/status-labels/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }, { "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"label\": \"Under Review\",\n  \"color\": \"#3B82F6\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Status Label",
+          "request": {
+            "method": "DELETE", "url": "{{baseUrl}}/api/bug-reports/status-labels/:id",
+            "header": [{ "key": "Authorization", "value": "Bearer {{authToken}}" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "name": "❤️ Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET", "url": "{{baseUrl}}/api/health"
+          }
+        }
+      ]
+    }
+
+  ]
+}

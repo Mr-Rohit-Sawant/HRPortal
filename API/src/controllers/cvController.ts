@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../app';
 import { AppError } from '../middleware/errorMiddleware';
-import { parseCVWithAI, buildSearchVector } from '../services/cvParserService';
+import { parseCVWithAI, buildSearchVector, extractTextFromFile } from '../services/cvParserService';
 import { indexCandidate, searchCandidates, removeFromIndex } from '../services/searchService';
 import { paginate, buildPaginationMeta } from '../utils/helpers';
 import path from 'path';
@@ -100,6 +100,7 @@ const buildMySQLWhere = (query: any) => {
       { nationality: { contains: s } },
       { source: { contains: s } },
       { notes: { contains: s } },
+      { rawText: { contains: s } },
     ];
   }
   return where;
@@ -123,6 +124,13 @@ export const createCandidate = async (req: Request, res: Response) => {
   const cvFile = req.file;
 
   const searchVector = buildSearchVector(data);
+
+  let rawText: string | null = null;
+  if (cvFile) {
+    try {
+      rawText = await extractTextFromFile(path.join(process.cwd(), 'uploads', 'cvs', cvFile.filename));
+    } catch { rawText = null; }
+  }
 
   // Strip any unknown keys that would cause Prisma to throw
   const {
@@ -165,6 +173,7 @@ export const createCandidate = async (req: Request, res: Response) => {
       cvFile: cvFile ? `uploads/cvs/${cvFile.filename}` : null,
       cvOriginalName: cvFile?.originalname,
       searchVector,
+      rawText,
       createdBy: req.user?.userId,
       businessId: req.user?.isSuperAdmin ? (bodyBusinessId || undefined) : (req.user?.businessId ?? undefined),
     },
@@ -231,6 +240,9 @@ export const updateCandidate = async (req: Request, res: Response) => {
   if (cvFile) {
     updates.cvFile = `uploads/cvs/${cvFile.filename}`;
     updates.cvOriginalName = cvFile.originalname;
+    try {
+      updates.rawText = await extractTextFromFile(path.join(process.cwd(), 'uploads', 'cvs', cvFile.filename));
+    } catch { updates.rawText = null; }
     if (existing.cvFile) {
       const oldPath = path.join(process.cwd(), existing.cvFile);
       if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
@@ -301,7 +313,7 @@ async function processBulkCVs(files: Express.Multer.File[], userId: string | und
 
   for (const file of files) {
     try {
-      const { data, confidence } = await parseCVWithAI(
+      const { data, rawText, confidence } = await parseCVWithAI(
         path.join(process.cwd(), 'uploads', 'cvs', file.filename),
         file.originalname
       );
@@ -339,6 +351,7 @@ async function processBulkCVs(files: Express.Multer.File[], userId: string | und
           cvFile: `uploads/cvs/${file.filename}`,
           cvOriginalName: file.originalname,
           searchVector: buildSearchVector(data),
+          rawText: rawText || null,
           createdBy: userId,
         },
       });

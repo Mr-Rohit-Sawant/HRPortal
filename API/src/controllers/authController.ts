@@ -5,6 +5,7 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/
 import { setAuthCookies, clearAuthCookies, sanitizeUser, generateResetToken } from '../utils/helpers';
 import { AppError } from '../middleware/errorMiddleware';
 import { sendPasswordResetEmail } from '../services/emailService';
+import { invalidateAuthToken } from '../middleware/authMiddleware';
 
 export const login = async (req: Request, res: Response) => {
   const { email, password, rememberMe } = req.body;
@@ -79,6 +80,8 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const logout = async (req: Request, res: Response) => {
+  const accessToken = req.cookies?.access_token;
+  if (accessToken) invalidateAuthToken(accessToken);
   if (req.user) {
     await prisma.user.update({
       where: { id: req.user.userId },

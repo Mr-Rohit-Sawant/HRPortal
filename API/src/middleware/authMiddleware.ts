@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, TokenPayload } from '../utils/jwt';
 import { AppError } from './errorMiddleware';
 import { prisma } from '../app';
+import { authCache, AUTH_TTL } from '../utils/cache';
 
 declare global {
   namespace Express {
@@ -18,10 +19,19 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
 
     const payload = verifyAccessToken(token);
 
+    // Cache hit — skip all DB queries for this request
+    const cached = authCache.get(`auth:${token}`);
+    if (cached) {
+      req.user = cached;
+      return next();
+    }
+
+    // Cache miss — fetch user + permissions + business (one DB round-trip each)
     const user = await prisma.user.findUnique({
       where: { id: payload.userId },
-      include: {
-        role: { include: { permissions: { include: { permission: true } } } },
+      select: {
+        id: true, status: true, businessId: true,
+        role: { select: { name: true, permissions: { select: { permission: { select: { module: true, action: true } } } } } },
       },
     });
 
@@ -33,7 +43,7 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
       (rp) => `${rp.permission.module}:${rp.permission.action}`
     );
 
-    // Block login if the user's business is disabled or removed (non-super-admins only)
+    // Check business status for non-super-admins
     if (!payload.isSuperAdmin && user.businessId) {
       const business = await prisma.business.findUnique({
         where: { id: user.businessId },
@@ -47,12 +57,17 @@ export const authenticate = async (req: Request, _res: Response, next: NextFunct
       }
     }
 
-    req.user = { ...payload, permissions, businessId: user.businessId ?? null };
+    const userData = { ...payload, permissions, businessId: user.businessId ?? null };
+    authCache.set(`auth:${token}`, userData, AUTH_TTL);
+    req.user = userData;
     next();
   } catch (err) {
     next(err);
   }
 };
+
+// Call on logout to immediately invalidate the cached session
+export const invalidateAuthToken = (token: string) => authCache.del(`auth:${token}`);
 
 export const requirePermission = (module: string, action: string) => {
   return (req: Request, _res: Response, next: NextFunction) => {

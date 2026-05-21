@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '../app';
 import { AppError } from '../middleware/errorMiddleware';
 import { paginate, buildPaginationMeta } from '../utils/helpers';
+import { settingsCache, SETTINGS_TTL } from '../utils/cache';
 import path from 'path';
 import fs from 'fs';
 
@@ -18,11 +19,22 @@ function settingsMapToResponse(map: Record<string, string | null>) {
   };
 }
 
-// --- Theme & App Settings ---
-export const getAppSettings = async (_req: Request, res: Response) => {
+const SETTINGS_CACHE_KEY = 'app_settings';
+
+async function fetchAndCacheSettings() {
   const settings = await prisma.appSetting.findMany();
   const map = settings.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {} as Record<string, string | null>);
-  res.json({ success: true, data: settingsMapToResponse(map) });
+  const data = settingsMapToResponse(map);
+  settingsCache.set(SETTINGS_CACHE_KEY, data, SETTINGS_TTL);
+  return data;
+}
+
+// --- Theme & App Settings ---
+export const getAppSettings = async (_req: Request, res: Response) => {
+  const cached = settingsCache.get(SETTINGS_CACHE_KEY);
+  if (cached) return res.json({ success: true, data: cached });
+  const data = await fetchAndCacheSettings();
+  res.json({ success: true, data });
 };
 
 export const updateAppSettings = async (req: Request, res: Response) => {
@@ -67,9 +79,8 @@ export const updateAppSettings = async (req: Request, res: Response) => {
     data: { userId: req.user?.userId, userEmail: req.user?.email, action: 'UPDATE', module: 'settings', newValues: updates },
   });
 
-  const allSettings = await prisma.appSetting.findMany();
-  const map = allSettings.reduce((acc, s) => ({ ...acc, [s.key]: s.value }), {} as Record<string, string | null>);
-  res.json({ success: true, data: settingsMapToResponse(map) });
+  const data = await fetchAndCacheSettings();
+  res.json({ success: true, data });
 };
 
 export const uploadLogo = async (req: Request, res: Response) => {
@@ -89,6 +100,7 @@ export const uploadLogo = async (req: Request, res: Response) => {
     create: { key: 'app_logo', value: logoPath, category: 'branding' },
   });
 
+  settingsCache.del(SETTINGS_CACHE_KEY);
   res.json({ success: true, data: { logoPath } });
 };
 
@@ -109,6 +121,7 @@ export const uploadFavicon = async (req: Request, res: Response) => {
     create: { key: 'app_favicon', value: faviconPath, category: 'branding' },
   });
 
+  settingsCache.del(SETTINGS_CACHE_KEY);
   res.json({ success: true, data: { faviconPath } });
 };
 

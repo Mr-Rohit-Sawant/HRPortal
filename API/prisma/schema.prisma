@@ -249,6 +249,7 @@ model User {
   @@index([email])
   @@index([status])
   @@index([businessId])
+  @@index([businessId, status])
   @@map("users")
 }
 
@@ -314,6 +315,7 @@ model Candidate {
 
   // Search Index
   searchVector    String?         @db.Text
+  rawText         String?         @db.LongText
 
   businessId      String?
   createdAt       DateTime        @default(now())
@@ -328,6 +330,9 @@ model Candidate {
   @@index([status])
   @@index([isPriority])
   @@index([businessId])
+  @@index([businessId, createdAt])
+  @@index([businessId, status])
+  @@index([businessId, isPriority])
   @@fulltext([firstName, lastName])
   @@map("candidates")
 }
@@ -430,6 +435,8 @@ model JobOpening {
   @@index([priority])
   @@index([clientId])
   @@index([businessId])
+  @@index([businessId, status])
+  @@index([status, priority])
   @@map("job_openings")
 }
 
@@ -533,6 +540,8 @@ model Invoice {
   @@index([status])
   @@index([clientId])
   @@index([businessId])
+  @@index([businessId, createdAt])
+  @@index([businessId, status])
   @@map("invoices")
 }
 
