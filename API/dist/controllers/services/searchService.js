@@ -1,0 +1,136 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.initElasticsearch = initElasticsearch;
+exports.indexCandidate = indexCandidate;
+exports.removeFromIndex = removeFromIndex;
+exports.searchCandidates = searchCandidates;
+const logger_1 = require("../utils/logger");
+const ES_URL = process.env.ELASTICSEARCH_URL || 'http://localhost:9200';
+const CV_INDEX = process.env.ELASTICSEARCH_INDEX_CV || 'hr_cvs';
+async function esRequest(method, endpoint, body) {
+    const res = await fetch(`${ES_URL}${endpoint}`, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: body ? JSON.stringify(body) : undefined,
+    });
+    return res.json();
+}
+async function initElasticsearch() {
+    try {
+        const mapping = {
+            mappings: {
+                properties: {
+                    firstName: { type: 'text', analyzer: 'standard' },
+                    lastName: { type: 'text', analyzer: 'standard' },
+                    email: { type: 'keyword' },
+                    phone: { type: 'keyword' },
+                    currentDesignation: { type: 'text' },
+                    currentCompany: { type: 'text' },
+                    currentLocation: { type: 'text' },
+                    skills: { type: 'text' },
+                    technologyStack: { type: 'text' },
+                    highestQualification: { type: 'text' },
+                    totalExperience: { type: 'float' },
+                    currentCTC: { type: 'float' },
+                    expectedCTC: { type: 'float' },
+                    noticePeriod: { type: 'integer' },
+                    gender: { type: 'keyword' },
+                    status: { type: 'keyword' },
+                    isPriority: { type: 'boolean' },
+                },
+            },
+            settings: { analysis: { analyzer: { default: { type: 'standard' } } } },
+        };
+        const exists = await esRequest('HEAD', `/${CV_INDEX}`);
+        if (exists?.status !== 200) {
+            await esRequest('PUT', `/${CV_INDEX}`, mapping);
+            logger_1.logger.info(`Elasticsearch index '${CV_INDEX}' created`);
+        }
+    }
+    catch (err) {
+        logger_1.logger.warn('Elasticsearch not available — search will use MySQL FULLTEXT fallback');
+    }
+}
+async function indexCandidate(candidate) {
+    try {
+        await esRequest('PUT', `/${CV_INDEX}/_doc/${candidate.id}`, {
+            firstName: candidate.firstName,
+            lastName: candidate.lastName,
+            email: candidate.email,
+            phone: candidate.phone,
+            currentDesignation: candidate.currentDesignation,
+            currentCompany: candidate.currentCompany,
+            currentLocation: candidate.currentLocation,
+            skills: Array.isArray(candidate.skills) ? candidate.skills.join(' ') : '',
+            technologyStack: Array.isArray(candidate.technologyStack) ? candidate.technologyStack.join(' ') : '',
+            highestQualification: candidate.highestQualification,
+            totalExperience: candidate.totalExperience,
+            currentCTC: candidate.currentCTC ? Number(candidate.currentCTC) : null,
+            expectedCTC: candidate.expectedCTC ? Number(candidate.expectedCTC) : null,
+            noticePeriod: candidate.noticePeriod,
+            gender: candidate.gender,
+            status: candidate.status,
+            isPriority: candidate.isPriority,
+        });
+    }
+    catch {
+        // silently fail — MySQL fallback handles search
+    }
+}
+async function removeFromIndex(candidateId) {
+    try {
+        await esRequest('DELETE', `/${CV_INDEX}/_doc/${candidateId}`);
+    }
+    catch { }
+}
+async function searchCandidates(query, filters = {}) {
+    try {
+        const must = [];
+        const filter = [];
+        if (query?.trim()) {
+            must.push({
+                multi_match: {
+                    query,
+                    fields: [
+                        'firstName^3', 'lastName^3', 'email^2', 'phone^2',
+                        'currentDesignation^2', 'currentCompany^2', 'skills^2',
+                        'technologyStack^2', 'currentLocation', 'highestQualification',
+                    ],
+                    type: 'best_fields',
+                    fuzziness: 'AUTO',
+                    prefix_length: 1,
+                },
+            });
+        }
+        if (filters.gender)
+            filter.push({ term: { gender: filters.gender } });
+        if (filters.status)
+            filter.push({ term: { status: filters.status } });
+        if (filters.isPriority !== undefined)
+            filter.push({ term: { isPriority: filters.isPriority } });
+        if (filters.minExp !== undefined || filters.maxExp !== undefined) {
+            filter.push({ range: { totalExperience: { gte: filters.minExp, lte: filters.maxExp } } });
+        }
+        if (filters.minCTC !== undefined || filters.maxCTC !== undefined) {
+            filter.push({ range: { expectedCTC: { gte: filters.minCTC, lte: filters.maxCTC } } });
+        }
+        const esQuery = {
+            query: {
+                bool: {
+                    ...(must.length > 0 ? { must } : { match_all: {} }),
+                    ...(filter.length > 0 ? { filter } : {}),
+                },
+            },
+            from: filters.skip || 0,
+            size: filters.take || 10,
+            sort: must.length > 0 ? [{ _score: 'desc' }] : [{ isPriority: 'desc' }],
+        };
+        const result = await esRequest('GET', `/${CV_INDEX}/_search`, esQuery);
+        const ids = result.hits?.hits?.map((h) => h._id) || [];
+        const total = result.hits?.total?.value || 0;
+        return { ids, total };
+    }
+    catch {
+        return { ids: [], total: 0 };
+    }
+}

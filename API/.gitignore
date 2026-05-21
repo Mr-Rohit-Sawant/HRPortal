@@ -1,8 +1,8 @@
 # Dependencies
 node_modules/
 
-# Build output
-dist/
+# Build output (committed so server doesn't need to compile)
+# dist/
 
 # Environment variables (NEVER commit this)
 .env
