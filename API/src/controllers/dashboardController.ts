@@ -105,7 +105,7 @@ export const getRecruitmentChart = async (req: Request, res: Response) => {
                COUNT(*) as added,
                SUM(status = 'HIRED') as hired,
                SUM(status = 'REJECTED') as rejected
-        FROM Candidate
+        FROM candidates
         WHERE createdAt >= ${startDate}
         GROUP BY month ORDER BY month`
     : businessId
@@ -114,7 +114,7 @@ export const getRecruitmentChart = async (req: Request, res: Response) => {
                COUNT(*) as added,
                SUM(status = 'HIRED') as hired,
                SUM(status = 'REJECTED') as rejected
-        FROM Candidate
+        FROM candidates
         WHERE createdAt >= ${startDate} AND businessId = ${businessId}
         GROUP BY month ORDER BY month`
     : [];
@@ -158,7 +158,7 @@ export const getRevenueChart = async (req: Request, res: Response) => {
         SELECT DATE_FORMAT(createdAt, '%Y-%m') as month,
                SUM(totalAmount) as invoiced,
                SUM(CASE WHEN status = 'PAID' THEN totalAmount ELSE 0 END) as collected
-        FROM Invoice
+        FROM invoices
         WHERE createdAt >= ${startDate} AND status IN ('PAID','SENT')
         GROUP BY month ORDER BY month`
     : businessId
@@ -166,7 +166,7 @@ export const getRevenueChart = async (req: Request, res: Response) => {
         SELECT DATE_FORMAT(createdAt, '%Y-%m') as month,
                SUM(totalAmount) as invoiced,
                SUM(CASE WHEN status = 'PAID' THEN totalAmount ELSE 0 END) as collected
-        FROM Invoice
+        FROM invoices
         WHERE createdAt >= ${startDate} AND status IN ('PAID','SENT') AND businessId = ${businessId}
         GROUP BY month ORDER BY month`
     : [];
