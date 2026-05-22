@@ -81,7 +81,11 @@ export const createClient = async (req: Request, res: Response) => {
       contractEndDate: contractEndDate ? new Date(contractEndDate) : null,
       notes,
       createdBy: req.user?.userId,
-      businessId: req.user?.isSuperAdmin ? (bodyBusinessId || undefined) : (req.user?.businessId ?? undefined),
+      businessId: (() => {
+        const bId = req.user?.isSuperAdmin ? bodyBusinessId : req.user?.businessId;
+        if (!bId) throw new AppError('Business ID is required to create a client', 400);
+        return bId;
+      })(),
     },
   });
 

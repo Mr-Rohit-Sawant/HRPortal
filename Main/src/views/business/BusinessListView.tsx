@@ -35,14 +35,13 @@ type BusinessFull = Business & { users?: BusinessUser[] };
 
 interface CreateForm {
   name: string;
-  code: string;
   adminEmail: string;
   adminPassword: string;
   adminFirstName: string;
   adminLastName: string;
 }
 
-const EMPTY: CreateForm = { name: '', code: '', adminEmail: '', adminPassword: '', adminFirstName: '', adminLastName: '' };
+const EMPTY: CreateForm = { name: '', adminEmail: '', adminPassword: '', adminFirstName: '', adminLastName: '' };
 
 // ── Business Quick Panel ──────────────────────────────────────────────────────
 
@@ -259,7 +258,7 @@ export default function BusinessListView() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.code || !form.adminEmail || !form.adminPassword || !form.adminFirstName || !form.adminLastName) {
+    if (!form.name || !form.adminEmail || !form.adminPassword || !form.adminFirstName || !form.adminLastName) {
       toast.error('All fields are required');
       return;
     }
@@ -451,15 +450,9 @@ export default function BusinessListView() {
       {/* Create Modal */}
       <Modal isOpen={createOpen} onClose={() => { setCreateOpen(false); setForm(EMPTY); }} title="Create Business" size="md">
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="form-label">Business Name *</label>
-              <input className="form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Acme Corp" />
-            </div>
-            <div>
-              <label className="form-label">Business Code *</label>
-              <input className="form-input uppercase" value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))} placeholder="e.g. ACM001" />
-            </div>
+          <div>
+            <label className="form-label">Business Name *</label>
+            <input className="form-input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Acme Corp" />
           </div>
 
           <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide pt-1">Admin Account</p>

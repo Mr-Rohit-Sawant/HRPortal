@@ -175,7 +175,11 @@ export const createCandidate = async (req: Request, res: Response) => {
       searchVector,
       rawText,
       createdBy: req.user?.userId,
-      businessId: req.user?.isSuperAdmin ? (bodyBusinessId || undefined) : (req.user?.businessId ?? undefined),
+      businessId: (() => {
+        const bId = req.user?.isSuperAdmin ? bodyBusinessId : req.user?.businessId;
+        if (!bId) throw new AppError('Business ID is required to create a candidate', 400);
+        return bId;
+      })(),
     },
   });
 

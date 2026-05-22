@@ -255,8 +255,8 @@ export default function EmployeeListView() {
                 {getInitials(row.firstName, row.lastName)}
               </div>
             )}
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{row.firstName} {row.lastName}</p>
+            <div className="min-w-0 flex-1 cursor-pointer" onClick={() => navigate(`/employees/${row.id}`)}>
+              <p className="text-sm font-medium text-slate-900 dark:text-white truncate hover:text-primary-600 dark:hover:text-primary-400">{row.firstName} {row.lastName}</p>
               <p className="text-xs text-slate-400 truncate">{row.email}</p>
             </div>
             <button

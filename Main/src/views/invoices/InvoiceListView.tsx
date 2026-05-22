@@ -403,7 +403,7 @@ export default function InvoiceListView() {
                     >
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2 group/inv">
-                          <span className="font-mono text-sm font-medium text-primary-700 dark:text-primary-400">{inv.invoiceNumber}</span>
+                          <span className="font-mono text-sm font-medium text-primary-700 dark:text-primary-400 cursor-pointer hover:underline" onClick={() => navigate(`/invoices/${inv.id}`)}>{inv.invoiceNumber}</span>
                           <button
                             onClick={() => setExpandedInvoiceId((p) => p === inv.id ? null : inv.id)}
                             title="Quick view"

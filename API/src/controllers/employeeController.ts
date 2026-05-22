@@ -119,7 +119,11 @@ export const createEmployee = async (req: Request, res: Response) => {
       employeeId,
       profilePhoto,
       createdBy: req.user?.userId,
-      businessId: req.user?.isSuperAdmin ? (bodyBusinessId || undefined) : (req.user?.businessId ?? undefined),
+      businessId: (() => {
+        const bId = req.user?.isSuperAdmin ? bodyBusinessId : req.user?.businessId;
+        if (!bId) throw new AppError('Business ID is required to create an employee', 400);
+        return bId;
+      })(),
     },
     include: { role: true },
   });

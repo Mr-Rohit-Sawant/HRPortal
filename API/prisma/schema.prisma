@@ -317,12 +317,12 @@ model Candidate {
   searchVector    String?         @db.Text
   rawText         String?         @db.LongText
 
-  businessId      String?
+  businessId      String
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   createdBy       String?
 
-  business              Business?       @relation(fields: [businessId], references: [id])
+  business              Business        @relation(fields: [businessId], references: [id])
   jobApplications       JobApplication[]
   interviewSlots        InterviewSlot[]
   postSelectionRecords  PostSelectionRecord[]
@@ -378,12 +378,12 @@ model Client {
   isActive          Boolean   @default(true)
   notes             String?   @db.Text
   customFields      Json?
-  businessId        String?
+  businessId        String
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   createdBy         String?
 
-  business          Business?  @relation(fields: [businessId], references: [id])
+  business          Business   @relation(fields: [businessId], references: [id])
   jobOpenings       JobOpening[]
   invoices          Invoice[]
   userNotifications UserNotification[] @relation("UserNotifClient")
@@ -418,13 +418,13 @@ model JobOpening {
   jdDocument       String?
   tags             Json?
   customFields     Json?
-  businessId       String?
+  businessId       String
   createdBy        String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
   client       Client          @relation(fields: [clientId], references: [id])
-  business     Business?       @relation(fields: [businessId], references: [id])
+  business     Business        @relation(fields: [businessId], references: [id])
   creator      User?           @relation("CreatedByUser", fields: [createdBy], references: [id])
   assignees    User[]          @relation("AssignedToUser")
   applications JobApplication[]

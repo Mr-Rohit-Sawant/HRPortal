@@ -64,13 +64,19 @@ export const getBusiness = async (req: Request, res: Response) => {
 
 // POST /businesses
 export const createBusiness = async (req: Request, res: Response) => {
-  const { name, code, adminEmail, adminPassword, adminFirstName, adminLastName } = req.body;
-  if (!name || !code || !adminEmail || !adminPassword || !adminFirstName || !adminLastName) {
-    throw new AppError('name, code, adminEmail, adminPassword, adminFirstName, adminLastName are required', 400);
+  const { name, adminEmail, adminPassword, adminFirstName, adminLastName } = req.body;
+  if (!name || !adminEmail || !adminPassword || !adminFirstName || !adminLastName) {
+    throw new AppError('name, adminEmail, adminPassword, adminFirstName, adminLastName are required', 400);
   }
 
-  const existing = await prisma.business.findUnique({ where: { code } });
-  if (existing) throw new AppError('Business code already exists', 409);
+  // Auto-generate business code: BIZ-0001, BIZ-0002, …
+  const last = await prisma.business.findFirst({ orderBy: { createdAt: 'desc' }, select: { code: true } });
+  let nextNum = 1;
+  if (last?.code) {
+    const match = last.code.match(/(\d+)$/);
+    if (match) nextNum = parseInt(match[1], 10) + 1;
+  }
+  const code = `BIZ-${String(nextNum).padStart(4, '0')}`;
 
   const existingEmail = await prisma.user.findUnique({ where: { email: adminEmail } });
   if (existingEmail) throw new AppError('Admin email already in use', 409);

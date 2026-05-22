@@ -579,8 +579,8 @@ export default function JobOpeningsView() {
         const isExpanded = expandedJobId === row.id;
         return (
           <div className="flex items-center gap-2 group/job">
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{row.jobTitle}</p>
+            <div className="min-w-0 flex-1 cursor-pointer" onClick={() => navigate(`/job-openings/${row.id}`)}>
+              <p className="text-sm font-medium text-slate-900 dark:text-white truncate hover:text-primary-600 dark:hover:text-primary-400">{row.jobTitle}</p>
               <p className="text-xs text-slate-400">{row.client?.companyName}</p>
             </div>
             <button

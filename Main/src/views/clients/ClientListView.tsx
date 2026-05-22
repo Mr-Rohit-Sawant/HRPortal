@@ -219,8 +219,8 @@ export default function ClientListView() {
             <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-700 dark:text-primary-400 font-bold text-xs flex-shrink-0">
               {row.companyName.charAt(0)}
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-slate-900 dark:text-white truncate">{row.companyName}</p>
+            <div className="min-w-0 flex-1 cursor-pointer" onClick={() => navigate(`/clients/${row.id}`)}>
+              <p className="text-sm font-medium text-slate-900 dark:text-white truncate hover:text-primary-600 dark:hover:text-primary-400">{row.companyName}</p>
               <p className="text-xs text-slate-400 truncate">{row.industry || 'N/A'}</p>
             </div>
             <button

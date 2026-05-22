@@ -65,13 +65,19 @@ const getBusiness = async (req, res) => {
 exports.getBusiness = getBusiness;
 // POST /businesses
 const createBusiness = async (req, res) => {
-    const { name, code, adminEmail, adminPassword, adminFirstName, adminLastName } = req.body;
-    if (!name || !code || !adminEmail || !adminPassword || !adminFirstName || !adminLastName) {
-        throw new errorMiddleware_1.AppError('name, code, adminEmail, adminPassword, adminFirstName, adminLastName are required', 400);
+    const { name, adminEmail, adminPassword, adminFirstName, adminLastName } = req.body;
+    if (!name || !adminEmail || !adminPassword || !adminFirstName || !adminLastName) {
+        throw new errorMiddleware_1.AppError('name, adminEmail, adminPassword, adminFirstName, adminLastName are required', 400);
     }
-    const existing = await app_1.prisma.business.findUnique({ where: { code } });
-    if (existing)
-        throw new errorMiddleware_1.AppError('Business code already exists', 409);
+    // Auto-generate business code: BIZ-0001, BIZ-0002, …
+    const last = await app_1.prisma.business.findFirst({ orderBy: { createdAt: 'desc' }, select: { code: true } });
+    let nextNum = 1;
+    if (last?.code) {
+        const match = last.code.match(/(\d+)$/);
+        if (match)
+            nextNum = parseInt(match[1], 10) + 1;
+    }
+    const code = `BIZ-${String(nextNum).padStart(4, '0')}`;
     const existingEmail = await app_1.prisma.user.findUnique({ where: { email: adminEmail } });
     if (existingEmail)
         throw new errorMiddleware_1.AppError('Admin email already in use', 409);

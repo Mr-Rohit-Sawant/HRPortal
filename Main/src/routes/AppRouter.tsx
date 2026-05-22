@@ -14,10 +14,13 @@ import JobOpeningDetailView from '../views/job-openings/JobOpeningDetailView';
 import JobOpeningFormView from '../views/job-openings/JobOpeningFormView';
 import EmployeeListView from '../views/employees/EmployeeListView';
 import AddEmployeeView from '../views/employees/AddEmployeeView';
+import EmployeeDetailView from '../views/employees/EmployeeDetailView';
 import ClientListView from '../views/clients/ClientListView';
 import AddClientView from '../views/clients/AddClientView';
+import ClientDetailView from '../views/clients/ClientDetailView';
 import InvoiceListView from '../views/invoices/InvoiceListView';
 import GenerateInvoiceView from '../views/invoices/GenerateInvoiceView';
+import InvoiceDetailView from '../views/invoices/InvoiceDetailView';
 import ProfileView from '../views/settings/ProfileView';
 import ThemeManagementView from '../views/settings/ThemeManagementView';
 import RoleManagementView from '../views/settings/RoleManagementView';
@@ -73,16 +76,19 @@ export default function AppRouter() {
         {/* Employees */}
         <Route path="/employees" element={<EmployeeListView />} />
         <Route path="/employees/add" element={<AddEmployeeView />} />
+        <Route path="/employees/:id" element={<EmployeeDetailView />} />
         <Route path="/employees/:id/edit" element={<AddEmployeeView />} />
 
         {/* Clients */}
         <Route path="/clients" element={<ClientListView />} />
         <Route path="/clients/add" element={<AddClientView />} />
+        <Route path="/clients/:id" element={<ClientDetailView />} />
         <Route path="/clients/:id/edit" element={<AddClientView />} />
 
         {/* Invoices */}
         <Route path="/invoices" element={<InvoiceListView />} />
         <Route path="/invoices/generate" element={<GenerateInvoiceView />} />
+        <Route path="/invoices/:id" element={<InvoiceDetailView />} />
 
         {/* Notifications */}
         <Route path="/notifications" element={<NotificationsView />} />
