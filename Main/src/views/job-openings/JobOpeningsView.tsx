@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -516,9 +516,10 @@ export default function JobOpeningsView() {
   const [search, setSearch] = useState('');
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [activeFilterTab, setActiveFilterTab] = useState<'filters' | 'recruiters'>('filters');
+  const [recruiterOpen, setRecruiterOpen] = useState(false);
+  const recruiterBtnRef = useRef<HTMLButtonElement>(null);
   const [sort, setSort] = useState({ field: '', dir: 'asc' as 'asc' | 'desc' });
-  const [filters, setFilters] = useState({ status: '', priority: '', clientId: '' });
+  const [filters, setFilters] = useState({ status: '', priority: '', clientId: '', dateFrom: '', dateTo: '', closingDateFrom: '', closingDateTo: '' });
   const [selectedRecruiters, setSelectedRecruiters] = useState<string[]>([]);
   const [expandedJobId, setExpandedJobId] = useState<string | null>(null);
   const [manageRecruitersJob, setManageRecruitersJob] = useState<JobOpening | null>(null);
@@ -530,6 +531,17 @@ export default function JobOpeningsView() {
     setExpandedJobId((prev) => (prev === row.id ? null : row.id));
   }, []);
 
+  // Close recruiter floating dropdown on outside click
+  useEffect(() => {
+    if (!recruiterOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (recruiterBtnRef.current?.contains(e.target as Node)) return;
+      setRecruiterOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [recruiterOpen]);
+
   const { data, isLoading } = useQuery({
     queryKey: [...QUERY_KEY, page, limit, debouncedSearch, filters, sort, selectedRecruiters],
     queryFn: async () => {
@@ -538,6 +550,7 @@ export default function JobOpeningsView() {
         ...(sort.field ? { sortBy: sort.field, sortDir: sort.dir } : {}),
         ...Object.fromEntries(Object.entries(filters).filter(([_, v]) => v)),
       };
+
       if (selectedRecruiters.length > 0) params.assigneeIds = selectedRecruiters.join(',');
       const res = await jobService.getJobs(params);
       return res.data;
@@ -710,8 +723,8 @@ export default function JobOpeningsView() {
             />
           </div>
           <button
-            onClick={() => { setShowFilters(!showFilters); setActiveFilterTab('filters'); }}
-            className={cn('btn-secondary relative', showFilters && activeFilterTab === 'filters' && 'border-primary-500 text-primary-700')}
+            onClick={() => setShowFilters((f) => !f)}
+            className={cn('btn-secondary relative', showFilters && 'border-primary-500 text-primary-700')}
           >
             <Filter size={16} />
             Filters
@@ -720,24 +733,47 @@ export default function JobOpeningsView() {
                 {Object.values(filters).filter(Boolean).length}
               </span>
             )}
-            <ChevronDown size={14} className={cn('transition-transform', showFilters && activeFilterTab === 'filters' && 'rotate-180')} />
+            <ChevronDown size={14} className={cn('transition-transform', showFilters && 'rotate-180')} />
           </button>
-          <button
-            onClick={() => { setShowFilters(!showFilters || activeFilterTab !== 'recruiters'); setActiveFilterTab('recruiters'); }}
-            className={cn('btn-secondary relative', showFilters && activeFilterTab === 'recruiters' && 'border-primary-500 text-primary-700')}
-          >
-            <Users size={16} />
-            Recruiter
-            {selectedRecruiters.length > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-primary-500 text-white text-[9px] flex items-center justify-center font-bold">
-                {selectedRecruiters.length}
-              </span>
+          <div className="relative">
+            <button
+              ref={recruiterBtnRef}
+              onClick={() => setRecruiterOpen((o) => !o)}
+              className={cn('btn-secondary relative', recruiterOpen && 'border-primary-500 text-primary-700')}
+            >
+              <Users size={16} />
+              Recruiter
+              {selectedRecruiters.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-primary-500 text-white text-[9px] flex items-center justify-center font-bold">
+                  {selectedRecruiters.length}
+                </span>
+              )}
+              <ChevronDown size={14} className={cn('transition-transform', recruiterOpen && 'rotate-180')} />
+            </button>
+
+            {/* Floating recruiter dropdown */}
+            {recruiterOpen && (
+              <div
+                className="absolute right-0 top-full mt-2 w-80 card shadow-2xl border border-slate-200 dark:border-slate-700 p-4 z-50"
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                    Select recruiters to filter jobs
+                  </p>
+                  {selectedRecruiters.length > 0 && (
+                    <button onClick={() => setSelectedRecruiters([])} className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1">
+                      <X size={11} /> Clear ({selectedRecruiters.length})
+                    </button>
+                  )}
+                </div>
+                <RecruiterPicker selected={selectedRecruiters} onChange={(ids) => { setSelectedRecruiters(ids); setPage(1); }} />
+              </div>
             )}
-            <ChevronDown size={14} className={cn('transition-transform', showFilters && activeFilterTab === 'recruiters' && 'rotate-180')} />
-          </button>
+          </div>
           {activeFilterCount > 0 && (
             <button
-              onClick={() => { setFilters({ status: '', priority: '', clientId: '' }); setSelectedRecruiters([]); }}
+              onClick={() => { setFilters({ status: '', priority: '', clientId: '', dateFrom: '', dateTo: '', closingDateFrom: '', closingDateTo: '' }); setSelectedRecruiters([]); }}
               className="btn-secondary text-red-500 hover:text-red-600"
             >
               <X size={14} /> Clear all
@@ -745,9 +781,9 @@ export default function JobOpeningsView() {
           )}
         </div>
 
-        {/* Status / Priority filters */}
-        {showFilters && activeFilterTab === 'filters' && (
-          <div className="pt-3 border-t border-slate-200 dark:border-slate-700 grid grid-cols-2 md:grid-cols-3 gap-3">
+        {/* Status / Priority / Date filters */}
+        {showFilters && (
+          <div className="pt-3 border-t border-slate-200 dark:border-slate-700 grid grid-cols-2 md:grid-cols-5 gap-3">
             <div>
               <label className="form-label text-xs">Status</label>
               <select value={filters.status} onChange={(e) => { setFilters({ ...filters, status: e.target.value }); setPage(1); }} className="form-input">
@@ -762,28 +798,57 @@ export default function JobOpeningsView() {
                 {['LOW', 'MEDIUM', 'HIGH', 'URGENT'].map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
+            <div>
+              <label className="form-label text-xs">Created Date</label>
+              <div className="flex items-center gap-1 form-input !py-0 !px-2 h-[38px]">
+                <input
+                  type="date"
+                  value={filters.dateFrom}
+                  onChange={(e) => { setFilters({ ...filters, dateFrom: e.target.value }); setPage(1); }}
+                  className="flex-1 bg-transparent text-xs outline-none text-slate-700 dark:text-slate-300 min-w-0"
+                />
+                <span className="text-slate-300 dark:text-slate-600 text-xs flex-shrink-0">—</span>
+                <input
+                  type="date"
+                  value={filters.dateTo}
+                  onChange={(e) => { setFilters({ ...filters, dateTo: e.target.value }); setPage(1); }}
+                  className="flex-1 bg-transparent text-xs outline-none text-slate-700 dark:text-slate-300 min-w-0"
+                />
+                {(filters.dateFrom || filters.dateTo) && (
+                  <button onClick={() => setFilters({ ...filters, dateFrom: '', dateTo: '' })} className="flex-shrink-0 text-slate-400 hover:text-slate-600">
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+            </div>
+            <div>
+              <label className="form-label text-xs">Closing Date</label>
+              <div className="flex items-center gap-1 form-input !py-0 !px-2 h-[38px]">
+                <input
+                  type="date"
+                  value={filters.closingDateFrom}
+                  onChange={(e) => { setFilters({ ...filters, closingDateFrom: e.target.value }); setPage(1); }}
+                  className="flex-1 bg-transparent text-xs outline-none text-slate-700 dark:text-slate-300 min-w-0"
+                />
+                <span className="text-slate-300 dark:text-slate-600 text-xs flex-shrink-0">—</span>
+                <input
+                  type="date"
+                  value={filters.closingDateTo}
+                  onChange={(e) => { setFilters({ ...filters, closingDateTo: e.target.value }); setPage(1); }}
+                  className="flex-1 bg-transparent text-xs outline-none text-slate-700 dark:text-slate-300 min-w-0"
+                />
+                {(filters.closingDateFrom || filters.closingDateTo) && (
+                  <button onClick={() => setFilters({ ...filters, closingDateFrom: '', closingDateTo: '' })} className="flex-shrink-0 text-slate-400 hover:text-slate-600">
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+            </div>
             <div className="flex items-end">
-              <button onClick={() => setFilters({ status: '', priority: '', clientId: '' })} className="btn-secondary w-full">
+              <button onClick={() => setFilters({ status: '', priority: '', clientId: '', dateFrom: '', dateTo: '', closingDateFrom: '', closingDateTo: '' })} className="btn-secondary w-full">
                 Clear Filters
               </button>
             </div>
-          </div>
-        )}
-
-        {/* Recruiter picker */}
-        {showFilters && activeFilterTab === 'recruiters' && (
-          <div className="pt-3 border-t border-slate-200 dark:border-slate-700">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                Select recruiters to filter jobs — multiple selection allowed
-              </p>
-              {selectedRecruiters.length > 0 && (
-                <button onClick={() => setSelectedRecruiters([])} className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1">
-                  <X size={11} /> Clear ({selectedRecruiters.length})
-                </button>
-              )}
-            </div>
-            <RecruiterPicker selected={selectedRecruiters} onChange={(ids) => { setSelectedRecruiters(ids); setPage(1); }} />
           </div>
         )}
       </div>
