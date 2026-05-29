@@ -1,7 +1,63 @@
-phpMyAdmin/.DS_Store
-phpMyAdmin/hr_recruitment_db.sql
+# ============================================================
+# OS & Editor
+# ============================================================
 .DS_Store
-*.sql
-*.sql
-.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/settings.json
+.idea/
+
+# ============================================================
+# Node modules (never commit)
+# ============================================================
+node_modules/
+Main/node_modules/
+API/node_modules/
+
+# ============================================================
+# Frontend build output (Main)
+# API/public/dist/ IS committed — server uses it directly
+# ============================================================
+Main/dist/
+
+# ============================================================
+# Environment files (never commit secrets)
+# ============================================================
+.env
+.env.local
+.env.production
+.env.*.local
+Main/.env
+Main/.env.local
+Main/.env.production
+API/.env
+API/.env.local
+API/.env.production
+
+# ============================================================
+# Logs
+# ============================================================
+*.log
+logs/
+Main/logs/
+API/logs/
+API/app.log
+
+# ============================================================
+# Uploads (user files)
+# ============================================================
+API/uploads/*
+!API/uploads/.gitkeep
+
+# ============================================================
+# SQL dumps (local only — use fresh_install_*.sql for deploys)
+# ============================================================
 phpMyAdmin/hr_recruitment_db.sql
+phpMyAdmin/*.DS_Store
+
+# ============================================================
+# Misc
+# ============================================================
+*.tsbuildinfo
+.npm/
