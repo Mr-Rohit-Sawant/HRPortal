@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config({ path: `.env.${process.env.NODE_ENV || 'development'}` });
+dotenv.config(); // fallback to .env if env-specific file missing
 
 import app, { prisma } from './app';
 import { logger } from './utils/logger';

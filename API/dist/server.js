@@ -37,7 +37,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config();
+dotenv_1.default.config({ path: `.env.${process.env.NODE_ENV || 'development'}` });
+dotenv_1.default.config(); // fallback to .env if env-specific file missing
 const app_1 = __importStar(require("./app"));
 const logger_1 = require("./utils/logger");
 const searchService_1 = require("./services/searchService");
