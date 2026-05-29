@@ -10,8 +10,10 @@ export interface DocFile {
 interface Props {
   files: DocFile[];
   initialIndex?: number;
-  height?: number;        // fixed px height (overrides aspectRatio)
-  aspectRatio?: string;   // e.g. "16/9" — scales with container width
+  height?: number;          // fixed px height (overrides aspectRatio)
+  aspectRatio?: string;     // e.g. "16/9" — scales with container width
+  fillViewport?: boolean;   // sticky full-height mode — covers remaining screen on scroll
+  viewportOffset?: number;  // px to subtract from 100vh (default 120)
   className?: string;
 }
 
@@ -22,7 +24,7 @@ function getExt(name: string) {
 function isPDF(name: string) { return getExt(name) === 'pdf'; }
 function isWord(name: string) { return ['doc', 'docx'].includes(getExt(name)); }
 
-export default function DocumentViewer({ files, initialIndex = 0, height, aspectRatio = '16/9', className }: Props) {
+export default function DocumentViewer({ files, initialIndex = 0, height, aspectRatio = '16/9', fillViewport = false, viewportOffset = 120, className }: Props) {
   const [activeIdx, setActiveIdx] = useState(() => Math.min(initialIndex, files.length - 1));
 
   if (!files.length) {
@@ -45,7 +47,7 @@ export default function DocumentViewer({ files, initialIndex = 0, height, aspect
   };
 
   return (
-    <div className={cn('flex flex-col', className)}>
+    <div className={cn('flex flex-col', fillViewport && 'sticky top-0', className)}>
       {/* File switcher tabs — only shown when multiple files */}
       {files.length > 1 && (
         <div className="flex items-center gap-1 px-1 pb-2 overflow-x-auto flex-shrink-0">
@@ -104,8 +106,11 @@ export default function DocumentViewer({ files, initialIndex = 0, height, aspect
 
       {/* Viewer area */}
       <div
-        className="border border-t-0 border-slate-200 dark:border-slate-700 rounded-b-xl overflow-hidden bg-slate-50 dark:bg-slate-900 flex-shrink-0 w-full"
-        style={height ? { height } : { aspectRatio }}
+        className="border border-t-0 border-slate-200 dark:border-slate-700 rounded-b-xl overflow-hidden bg-slate-50 dark:bg-slate-900 w-full"
+        style={fillViewport
+          ? { height: `calc(100vh - ${viewportOffset}px)` }
+          : height ? { height } : { aspectRatio }
+        }
       >
         {isPDF(file.name) ? (
           <iframe

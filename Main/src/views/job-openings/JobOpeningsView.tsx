@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { usePanelResize } from '../../hooks/usePanelResize';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -446,6 +447,7 @@ function RecruiterPicker({
 
 function JobQuickPanel({ id, onClose }: { id: string; onClose: () => void }) {
   const navigate = useNavigate();
+  const { panelStyle, dragHandleProps, dragging } = usePanelResize();
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -467,10 +469,12 @@ function JobQuickPanel({ id, onClose }: { id: string; onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-y-0 right-0 w-full md:w-[50vw] max-w-3xl bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-700"
-      style={{ animation: 'slideInPanel 0.22s ease-out' }}
+      className="fixed inset-y-0 right-0 w-full md:w-[50vw] max-w-3xl bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-700 !m-0"
+      style={{ animation: 'slideInPanel 0.22s ease-out', ...panelStyle }}
     >
-      <style>{`@keyframes slideInPanel { from { transform: translateX(100%); opacity:0 } to { transform: translateX(0); opacity:1 } }`}</style>
+      <div {...dragHandleProps} className={`absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-10 flex items-center justify-center group ${dragging ? 'bg-primary-400/40' : 'hover:bg-primary-400/20'}`}>
+        <div className={`w-0.5 h-10 rounded-full transition-colors ${dragging ? 'bg-primary-500' : 'bg-slate-300 dark:bg-slate-600 group-hover:bg-primary-400'}`} />
+      </div>
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-900 dark:text-white truncate">{data?.jobTitle || 'Job Details'}</p>

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Edit, Download, MapPin, Mail, Phone, Briefcase, GraduationCap, Star, Calendar } from 'lucide-react';
 import { cvService } from '../../services/cvService';
 import { formatDate, formatCTC, formatExperience, getStatusColor, cn } from '../../utils/helpers';
+import CopyButton from '../../components/common/CopyButton';
 import DocumentViewer, { DocFile } from '../../components/common/DocumentViewer';
 import toast from 'react-hot-toast';
 
@@ -89,12 +90,14 @@ export default function CVDetailView() {
               <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                 <Mail size={14} className="text-slate-400" />
                 <a href={`mailto:${data.email}`} className="hover:text-primary-600 truncate">{data.email}</a>
+                <CopyButton value={data.email} />
               </div>
             )}
             {data.phone && (
               <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                 <Phone size={14} className="text-slate-400" />
                 <a href={`tel:${data.phone}`} className="hover:text-primary-600">{data.phone}</a>
+                <CopyButton value={data.phone} />
               </div>
             )}
             {data.currentLocation && (
@@ -217,15 +220,15 @@ export default function CVDetailView() {
         </div>
       </div>
 
-      {/* Document Viewer — below the profile grid */}
+      {/* Document Viewer — sticky, fills viewport height on scroll */}
       {data.cvFile && (() => {
         const docFiles: DocFile[] = [{ url: `/${data.cvFile}`, name: data.cvOriginalName || data.cvFile.split('/').pop() || 'document' }];
         return (
-          <div className="card p-4 mt-6">
-            <h3 className="font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2">
+          <div className="mt-6">
+            <h3 className="font-semibold text-slate-900 dark:text-white mb-3 flex items-center gap-2 px-1">
               <Briefcase size={15} className="text-primary-500" /> CV / Resume
             </h3>
-            <DocumentViewer files={docFiles} height={680} />
+            <DocumentViewer files={docFiles} fillViewport />
           </div>
         );
       })()}

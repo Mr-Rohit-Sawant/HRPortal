@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.uploadCustomFieldFiles = exports.markAllNotificationsRead = exports.markNotificationRead = exports.getNotifications = exports.getAuditLogs = exports.reorderColumns = exports.deleteColumnDefinition = exports.upsertColumnDefinition = exports.getColumnDefinitions = exports.getPermissions = exports.cloneRole = exports.deleteRole = exports.updateRole = exports.createRole = exports.getRoles = exports.uploadFont = exports.uploadFavicon = exports.uploadLogo = exports.updateAppSettings = exports.getAppSettings = void 0;
+exports.uploadCustomFieldFiles = exports.markAllNotificationsRead = exports.markNotificationRead = exports.getNotifications = exports.getAuditLogs = exports.reorderColumns = exports.deleteColumnDefinition = exports.upsertColumnDefinition = exports.getColumnDefinitions = exports.getPermissions = exports.cloneRole = exports.toggleRole = exports.deleteRole = exports.updateRole = exports.createRole = exports.getRoles = exports.uploadFont = exports.uploadFavicon = exports.uploadLogo = exports.updateAppSettings = exports.getAppSettings = void 0;
 const app_1 = require("../app");
 const errorMiddleware_1 = require("../middleware/errorMiddleware");
 const helpers_1 = require("../utils/helpers");
@@ -128,8 +128,25 @@ const uploadFont = async (req, res) => {
 };
 exports.uploadFont = uploadFont;
 // --- Role Management ---
-const getRoles = async (_req, res) => {
+const getRoles = async (req, res) => {
+    const user = req.user;
+    const isSuperAdmin = !!user.isSuperAdmin;
+    let where = {};
+    if (!isSuperAdmin) {
+        if (user.businessId) {
+            // Business-linked: system roles (non-super_admin) + own business custom roles
+            where.AND = [
+                { name: { not: 'super_admin' } },
+                { OR: [{ businessId: null }, { businessId: user.businessId }] },
+            ];
+        }
+        else {
+            // Unlinked non-super-admin: sees all roles except super_admin
+            where.name = { not: 'super_admin' };
+        }
+    }
     const roles = await app_1.prisma.role.findMany({
+        where,
         include: {
             permissions: { include: { permission: true } },
             _count: { select: { users: true } },
@@ -139,11 +156,26 @@ const getRoles = async (_req, res) => {
 };
 exports.getRoles = getRoles;
 const createRole = async (req, res) => {
-    const { name, description, permissionIds } = req.body;
+    const { name, description, permissionIds, businessId: bodyBusinessId } = req.body;
+    const user = req.user;
+    let businessId;
+    if (user.isSuperAdmin) {
+        businessId = bodyBusinessId || undefined;
+    }
+    else if (user.businessId) {
+        // Business-linked users: always scoped to their own business
+        businessId = user.businessId;
+    }
+    else {
+        // Unlinked users: use whatever was selected in the form (or null = global)
+        businessId = bodyBusinessId || undefined;
+    }
     const role = await app_1.prisma.role.create({
         data: {
             name: name.toLowerCase().replace(/\s+/g, '_'),
             description,
+            isActive: false, // disabled by default — must be manually enabled
+            ...(businessId ? { businessId } : {}),
             permissions: {
                 create: permissionIds.map((id) => ({ permissionId: id })),
             },
@@ -187,17 +219,36 @@ const deleteRole = async (req, res) => {
     res.json({ success: true, message: 'Role deleted' });
 };
 exports.deleteRole = deleteRole;
+const toggleRole = async (req, res) => {
+    const { id } = req.params;
+    const role = await app_1.prisma.role.findUniqueOrThrow({ where: { id } });
+    if (role.isSystem)
+        throw new errorMiddleware_1.AppError('System roles cannot be toggled', 400);
+    const updated = await app_1.prisma.role.update({
+        where: { id },
+        data: { isActive: !role.isActive },
+    });
+    res.json({ success: true, data: updated });
+};
+exports.toggleRole = toggleRole;
 const cloneRole = async (req, res) => {
     const { id } = req.params;
     const { name } = req.body;
+    const user = req.user;
     const source = await app_1.prisma.role.findUniqueOrThrow({
         where: { id },
         include: { permissions: true },
     });
+    // Cloning rules:
+    // - User linked to a business → clone scoped to their business (regardless of source)
+    // - User NOT linked to any business (or super admin) → clone is Global (null)
+    const clonedBusinessId = user.businessId ?? null;
     const cloned = await app_1.prisma.role.create({
         data: {
             name: name || `${source.name}_copy`,
             description: `Cloned from ${source.name}`,
+            isActive: false, // disabled by default — must be manually enabled
+            ...(clonedBusinessId ? { businessId: clonedBusinessId } : {}),
             permissions: {
                 create: source.permissions.map((p) => ({ permissionId: p.permissionId })),
             },

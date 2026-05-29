@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Edit, Trash2, Copy, Shield, ChevronDown, ChevronRight } from 'lucide-react';
+import { Plus, Edit, Trash2, Copy, Shield, ChevronDown, ChevronRight, Globe, Building2 } from 'lucide-react';
 import { settingsService } from '../../services/settingsService';
 import { notificationService } from '../../services/notificationService';
 import { useAuthStore } from '../../stores/authStore';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 import Modal from '../../components/common/Modal';
+import BusinessSearchSelect from '../../components/common/BusinessSearchSelect';
 import toast from 'react-hot-toast';
 
 const DELAY_OPTIONS = [
@@ -19,7 +20,7 @@ const DELAY_OPTIONS = [
 ];
 
 interface Permission { id: string; module: string; action: string; }
-interface Role { id: string; name: string; isSystem: boolean; permissions: { permission: Permission }[] | undefined; }
+interface Role { id: string; name: string; isSystem: boolean; isActive: boolean; businessId?: string | null; permissions: { permission: Permission }[] | undefined; }
 
 const MODULE_LABELS: Record<string, string> = {
   dashboard: 'Dashboard', cv: 'CV Database', jobs: 'Job Openings',
@@ -33,22 +34,42 @@ const ACTION_LABELS: Record<string, string> = {
   bulk_import: 'Bulk Import', download: 'Download', toggle_status: 'Toggle Status',
   send_email: 'Send Email', theme: 'Manage Theme', roles: 'Manage Roles',
   fonts: 'Manage Fonts', manage: 'Manage Columns', manage_options: 'Manage Dropdown Options',
-  manage_roles: 'Manage Roles', view_contacts: 'View Contact Details',
+  manage_roles: 'Manage Roles (Full)', view_contacts: 'View Contact Details',
+  roles_view: 'View Roles', roles_create: 'Create Roles',
+  roles_edit: 'Edit Roles', roles_delete: 'Delete Roles',
+  language: 'Language Management',
 };
 
 export default function RoleManagementView() {
   const queryClient = useQueryClient();
   const { user, canAccess } = useAuthStore();
   const isSuperAdmin = !!user?.isSuperAdmin;
-  const canManageRoles = isSuperAdmin || canAccess('settings:manage_roles');
+  // support both old key (settings:roles) and new key (settings:manage_roles)
+  const canManageRoles = isSuperAdmin || canAccess('settings:manage_roles') || canAccess('settings:roles');
+  const canViewRoles = isSuperAdmin || canManageRoles || canAccess('settings:roles_view');
+  const canCreateRoles = isSuperAdmin || canManageRoles || canAccess('settings:roles_create');
+  const canEditRoles = isSuperAdmin || canManageRoles || canAccess('settings:roles_edit');
+  const canDeleteRoles = isSuperAdmin || canManageRoles || canAccess('settings:roles_delete');
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editModal, setEditModal] = useState(false);
   const [newRoleName, setNewRoleName] = useState('');
+  const [scopeBusinessId, setScopeBusinessId] = useState('');
   const [selectedPermIds, setSelectedPermIds] = useState<Set<string>>(new Set());
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set(Object.keys(MODULE_LABELS)));
   const [notifEditDelay, setNotifEditDelay] = useState('never_expire');
   const [notifDeleteDelay, setNotifDeleteDelay] = useState('never_expire');
+
+  // Show business scope for super admin AND users not linked to any business
+  const showBusinessScope = isSuperAdmin || !user?.businessId;
+
+  // A business-linked user can only edit roles belonging to their own business (not global roles)
+  const canEditRole = (role: Role) => {
+    if (isSuperAdmin) return true;
+    if (role.isSystem) return false; // system roles: super admin only
+    if (!role.businessId) return !user?.businessId; // global custom roles: only unlinked users
+    return role.businessId === user?.businessId; // business roles: only same business
+  };
 
   const { data: rolesData } = useQuery({
     queryKey: ['roles'],
@@ -65,10 +86,17 @@ export default function RoleManagementView() {
     queryFn: async () => { const res = await notificationService.getPermissions(); return (res.data as any).data; },
   });
 
-  const roles: Role[] = (rolesData || []) as unknown as Role[];
+  // Super Admin role is hidden from non-super-admins everywhere
+  const roles: Role[] = ((rolesData || []) as unknown as Role[])
+    .filter((r) => isSuperAdmin || r.name !== 'super_admin');
   const permissions: Permission[] = permsData || [];
 
-  const permsByModule = permissions.reduce<Record<string, Permission[]>>((acc, p) => {
+  // Only show permissions that the logged-in user themselves possess (super admin sees all)
+  const visiblePermissions = isSuperAdmin
+    ? permissions
+    : permissions.filter((p) => user?.permissions?.includes(`${p.module}:${p.action}`));
+
+  const permsByModule = visiblePermissions.reduce<Record<string, Permission[]>>((acc, p) => {
     if (!acc[p.module]) acc[p.module] = [];
     acc[p.module].push(p);
     return acc;
@@ -91,6 +119,7 @@ export default function RoleManagementView() {
       setSelectedRole(null);
       setNewRoleName('');
       setSelectedPermIds(new Set());
+      setScopeBusinessId('');
       setNotifEditDelay('never_expire');
       setNotifDeleteDelay('never_expire');
     }
@@ -110,7 +139,11 @@ export default function RoleManagementView() {
   };
 
   const createMutation = useMutation({
-    mutationFn: () => settingsService.createRole({ name: newRoleName, permissionIds: Array.from(selectedPermIds) }),
+    mutationFn: () => settingsService.createRole({
+      name: newRoleName,
+      permissionIds: Array.from(selectedPermIds),
+      ...(showBusinessScope && scopeBusinessId ? { businessId: scopeBusinessId } : {}),
+    }),
     onSuccess: () => { toast.success('Role created'); queryClient.invalidateQueries({ queryKey: ['roles'] }); setEditModal(false); },
   });
 
@@ -125,6 +158,15 @@ export default function RoleManagementView() {
   const cloneMutation = useMutation({
     mutationFn: (id: string) => settingsService.cloneRole(id),
     onSuccess: () => { toast.success('Role cloned'); queryClient.invalidateQueries({ queryKey: ['roles'] }); },
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (id: string) => settingsService.toggleRole(id),
+    onSuccess: (res) => {
+      const active = (res.data.data as any)?.isActive;
+      toast.success(active ? 'Role enabled' : 'Role disabled');
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+    },
   });
 
   const deleteMutation = useMutation({
@@ -158,7 +200,7 @@ export default function RoleManagementView() {
           <h1 className="page-title">Role Management</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">{roles.length} roles defined</p>
         </div>
-        {canManageRoles && (
+        {canCreateRoles && (
           <button onClick={() => openEdit()} className="btn-primary">
             <Plus size={16} /> Create Role
           </button>
@@ -167,11 +209,11 @@ export default function RoleManagementView() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         {roles.map((role) => (
-          <div key={role.id} className="card p-5">
+          <div key={role.id} className={`card p-5 transition-opacity ${!role.isActive && !role.isSystem ? 'opacity-60' : ''}`}>
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
-                  <Shield size={18} className="text-primary-600" />
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${role.isActive || role.isSystem ? 'bg-primary-100 dark:bg-primary-900/30' : 'bg-slate-100 dark:bg-slate-800'}`}>
+                  <Shield size={18} className={role.isActive || role.isSystem ? 'text-primary-600' : 'text-slate-400'} />
                 </div>
                 <div>
                   <h3 className="font-semibold text-slate-900 dark:text-white capitalize">
@@ -180,9 +222,21 @@ export default function RoleManagementView() {
                   <p className="text-xs text-slate-500">{(role.permissions || []).length} permissions</p>
                 </div>
               </div>
-              {role.isSystem && (
-                <span className="badge bg-blue-100 text-blue-700 text-xs">System</span>
-              )}
+              <div className="flex flex-col items-end gap-1">
+                {role.isSystem
+                  ? <span className="badge bg-blue-100 text-blue-700 text-xs">System</span>
+                  : <>
+                      {role.isActive
+                        ? <span className="badge bg-emerald-100 text-emerald-700 text-xs">Enabled</span>
+                        : <span className="badge bg-slate-100 text-slate-500 text-xs">Disabled</span>
+                      }
+                      {role.businessId
+                        ? <span className="badge bg-amber-100 text-amber-700 text-xs flex items-center gap-1"><Building2 size={10} />Business</span>
+                        : <span className="badge bg-green-100 text-green-700 text-xs flex items-center gap-1"><Globe size={10} />Global</span>
+                      }
+                    </>
+                }
+              </div>
             </div>
 
             <div className="flex flex-wrap gap-1 mb-4 min-h-8">
@@ -196,15 +250,32 @@ export default function RoleManagementView() {
             </div>
 
             <div className="flex gap-1.5">
-              {(!role.isSystem || isSuperAdmin) && canManageRoles && (
+              {canEditRoles && canEditRole(role) && (
                 <button onClick={() => openEdit(role)} className="btn-secondary flex-1 py-1.5 text-xs justify-center">
                   <Edit size={13} /> Edit
                 </button>
               )}
-              <button onClick={() => cloneMutation.mutate(role.id)} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 transition-colors" title="Clone">
-                <Copy size={14} />
-              </button>
-              {(!role.isSystem || isSuperAdmin) && canManageRoles && (
+              {/* Enable / Disable toggle — system roles cannot be toggled */}
+              {!role.isSystem && canEditRole(role) && (
+                <button
+                  onClick={() => toggleMutation.mutate(role.id)}
+                  disabled={toggleMutation.isPending}
+                  title={role.isActive ? 'Disable role' : 'Enable role'}
+                  className={`px-2.5 py-1.5 rounded-lg transition-colors text-xs font-medium ${
+                    role.isActive
+                      ? 'hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600'
+                      : 'hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-emerald-600'
+                  }`}
+                >
+                  {role.isActive ? 'Disable' : 'Enable'}
+                </button>
+              )}
+              {canViewRoles && (
+                <button onClick={() => cloneMutation.mutate(role.id)} className="px-2.5 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 transition-colors" title="Clone">
+                  <Copy size={14} />
+                </button>
+              )}
+              {canDeleteRoles && canEditRole(role) && (
                 <button onClick={() => setDeleteId(role.id)} className="px-2.5 py-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500 transition-colors">
                   <Trash2 size={14} />
                 </button>
@@ -244,6 +315,27 @@ export default function RoleManagementView() {
               disabled={!!(selectedRole?.isSystem && !isSuperAdmin)}
             />
           </div>
+
+          {/* Business scope — shown only when creating a new role as an unlinked user */}
+          {showBusinessScope && !selectedRole && (
+            <div>
+              <label className="form-label flex items-center gap-1.5">
+                <Building2 size={14} /> Business Scope
+                <span className="text-slate-400 font-normal text-xs">(optional)</span>
+              </label>
+              <BusinessSearchSelect
+                value={scopeBusinessId}
+                onChange={setScopeBusinessId}
+                placeholder="— Leave empty for global (visible to all) —"
+              />
+              <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
+                {scopeBusinessId
+                  ? <><Building2 size={11} className="text-primary-500" /> This role will only be visible to the selected business</>
+                  : <><Globe size={11} /> No business selected — role will be visible to all businesses</>
+                }
+              </p>
+            </div>
+          )}
 
           <div>
             <div className="flex items-center justify-between mb-3">

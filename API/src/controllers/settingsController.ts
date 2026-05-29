@@ -141,8 +141,26 @@ export const uploadFont = async (req: Request, res: Response) => {
 };
 
 // --- Role Management ---
-export const getRoles = async (_req: Request, res: Response) => {
+export const getRoles = async (req: Request, res: Response) => {
+  const user = req.user!;
+  const isSuperAdmin = !!user.isSuperAdmin;
+
+  let where: any = {};
+  if (!isSuperAdmin) {
+    if (user.businessId) {
+      // Business-linked: system roles (non-super_admin) + own business custom roles
+      where.AND = [
+        { name: { not: 'super_admin' } },
+        { OR: [{ businessId: null }, { businessId: user.businessId }] },
+      ];
+    } else {
+      // Unlinked non-super-admin: sees all roles except super_admin
+      where.name = { not: 'super_admin' };
+    }
+  }
+
   const roles = await prisma.role.findMany({
+    where,
     include: {
       permissions: { include: { permission: true } },
       _count: { select: { users: true } },
@@ -152,12 +170,26 @@ export const getRoles = async (_req: Request, res: Response) => {
 };
 
 export const createRole = async (req: Request, res: Response) => {
-  const { name, description, permissionIds } = req.body;
+  const { name, description, permissionIds, businessId: bodyBusinessId } = req.body;
+  const user = req.user!;
+
+  let businessId: string | undefined;
+  if (user.isSuperAdmin) {
+    businessId = bodyBusinessId || undefined;
+  } else if (user.businessId) {
+    // Business-linked users: always scoped to their own business
+    businessId = user.businessId;
+  } else {
+    // Unlinked users: use whatever was selected in the form (or null = global)
+    businessId = bodyBusinessId || undefined;
+  }
 
   const role = await prisma.role.create({
     data: {
       name: name.toLowerCase().replace(/\s+/g, '_'),
       description,
+      isActive: false, // disabled by default — must be manually enabled
+      ...(businessId ? { businessId } : {}),
       permissions: {
         create: permissionIds.map((id: string) => ({ permissionId: id })),
       },
@@ -205,19 +237,39 @@ export const deleteRole = async (req: Request, res: Response) => {
   res.json({ success: true, message: 'Role deleted' });
 };
 
+export const toggleRole = async (req: Request, res: Response) => {
+  const { id } = req.params;
+  const role = await prisma.role.findUniqueOrThrow({ where: { id } });
+  if (role.isSystem) throw new AppError('System roles cannot be toggled', 400);
+  const updated = await prisma.role.update({
+    where: { id },
+    data: { isActive: !role.isActive },
+  });
+  res.json({ success: true, data: updated });
+};
+
 export const cloneRole = async (req: Request, res: Response) => {
   const { id } = req.params;
   const { name } = req.body;
+  const user = req.user!;
 
   const source = await prisma.role.findUniqueOrThrow({
     where: { id },
     include: { permissions: true },
   });
 
+  // Cloning rules:
+  // - User linked to a business → clone scoped to their business (regardless of source)
+  // - User NOT linked to any business (or super admin) → clone is Global (null)
+
+  const clonedBusinessId = user.businessId ?? null;
+
   const cloned = await prisma.role.create({
     data: {
       name: name || `${source.name}_copy`,
       description: `Cloned from ${source.name}`,
+      isActive: false, // disabled by default — must be manually enabled
+      ...(clonedBusinessId ? { businessId: clonedBusinessId } : {}),
       permissions: {
         create: source.permissions.map((p) => ({ permissionId: p.permissionId })),
       },

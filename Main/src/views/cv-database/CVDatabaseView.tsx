@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { usePanelResize } from '../../hooks/usePanelResize';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -19,6 +20,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog';
 import DynamicTable, { FixedColumn, ActionButton } from '../../components/common/DynamicTable';
 import toast from 'react-hot-toast';
 import { useDebounce } from '../../hooks/useDebounce';
+import CopyButton from '../../components/common/CopyButton';
 
 const STATUS_OPTIONS = ['NEW', 'SCREENING', 'SHORTLISTED', 'INTERVIEWING', 'OFFERED', 'HIRED', 'REJECTED', 'ON_HOLD', 'ACTIVE', 'INACTIVE', 'BLACKLIST'];
 const GENDER_OPTIONS = ['MALE', 'FEMALE', 'OTHER'];
@@ -44,6 +46,7 @@ function useIsMobile() {
 
 function CandidateQuickPanel({ id, onClose }: { id: string; onClose: () => void }) {
   const navigate = useNavigate();
+  const { panelStyle, dragHandleProps, dragging } = usePanelResize();
 
   const { data, isLoading } = useQuery({
     queryKey: ['candidate', id],
@@ -66,9 +69,11 @@ function CandidateQuickPanel({ id, onClose }: { id: string; onClose: () => void 
   };
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full md:w-[42vw] max-w-2xl bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-700"
-      style={{ animation: 'slideInPanel 0.22s ease-out' }}>
-      <style>{`@keyframes slideInPanel { from { transform: translateX(100%); opacity:0 } to { transform: translateX(0); opacity:1 } }`}</style>
+    <div className="fixed inset-y-0 right-0 w-full md:w-[42vw] max-w-2xl bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-700 !m-0"
+      style={{ animation: 'slideInPanel 0.22s ease-out', ...panelStyle }}>
+      <div {...dragHandleProps} className={`absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-10 flex items-center justify-center group ${dragging ? 'bg-primary-400/40' : 'hover:bg-primary-400/20'}`}>
+        <div className={`w-0.5 h-10 rounded-full transition-colors ${dragging ? 'bg-primary-500' : 'bg-slate-300 dark:bg-slate-600 group-hover:bg-primary-400'}`} />
+      </div>
 
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
@@ -129,14 +134,20 @@ function CandidateQuickPanel({ id, onClose }: { id: string; onClose: () => void 
             {/* Contact */}
             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700/60 space-y-2.5">
               {data.email && (
-                <a href={`mailto:${data.email}`} className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 truncate">
-                  <Mail size={13} className="text-slate-400 flex-shrink-0" />{data.email}
-                </a>
+                <div className="flex items-center gap-1.5">
+                  <a href={`mailto:${data.email}`} className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 truncate">
+                    <Mail size={13} className="text-slate-400 flex-shrink-0" />{data.email}
+                  </a>
+                  <CopyButton value={data.email} />
+                </div>
               )}
               {data.phone && (
-                <a href={`tel:${data.phone}`} className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
-                  <Phone size={13} className="text-slate-400 flex-shrink-0" />{data.phone}
-                </a>
+                <div className="flex items-center gap-1.5">
+                  <a href={`tel:${data.phone}`} className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400">
+                    <Phone size={13} className="text-slate-400 flex-shrink-0" />{data.phone}
+                  </a>
+                  <CopyButton value={data.phone} />
+                </div>
               )}
               {data.currentLocation && (
                 <div className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300">
@@ -242,7 +253,7 @@ function CandidateQuickPanel({ id, onClose }: { id: string; onClose: () => void 
                   <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-1.5">
                     <FileText size={11} /> CV / Resume
                   </p>
-                  <DocumentViewer files={docFiles} height={500} />
+                  <DocumentViewer files={docFiles} fillViewport viewportOffset={280} />
                 </div>
               );
             })()}

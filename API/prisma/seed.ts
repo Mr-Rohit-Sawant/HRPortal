@@ -51,8 +51,14 @@ async function main() {
     { module: 'columns', action: 'manage' },
     // Dropdown options management
     { module: 'dropdown', action: 'manage_options' },
-    // Role management
+    // Language management
+    { module: 'settings', action: 'language' },
+    // Role management (granular sub-permissions)
     { module: 'settings', action: 'manage_roles' },
+    { module: 'settings', action: 'roles_view' },
+    { module: 'settings', action: 'roles_create' },
+    { module: 'settings', action: 'roles_edit' },
+    { module: 'settings', action: 'roles_delete' },
   ];
 
   const createdPermissions: Record<string, string> = {};
@@ -114,6 +120,7 @@ async function main() {
     'cv:download', 'jobs:view', 'jobs:create', 'jobs:update', 'invoices:view', 'invoices:create',
     'invoices:update', 'invoices:send_email', 'settings:view', 'columns:manage',
     'dropdown:manage_options', 'settings:manage_roles',
+    'settings:roles_view', 'settings:roles_create', 'settings:roles_edit', 'settings:roles_delete',
   ];
   for (const key of adminPermKeys) {
     const permId = createdPermissions[key];

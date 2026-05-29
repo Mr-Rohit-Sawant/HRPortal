@@ -292,10 +292,10 @@ const bulkImportCVs = async (req, res) => {
         data: { jobId, total: files.length },
     });
     // Process in background
-    processBulkCVs(files, req.user?.userId, jobId);
+    processBulkCVs(files, req.user?.userId, jobId, req.user?.businessId ?? undefined);
 };
 exports.bulkImportCVs = bulkImportCVs;
-async function processBulkCVs(files, userId, jobId) {
+async function processBulkCVs(files, userId, jobId, businessId) {
     global.bulkImportResults = global.bulkImportResults || {};
     const results = [];
     for (const file of files) {
@@ -336,6 +336,7 @@ async function processBulkCVs(files, userId, jobId) {
                     searchVector: (0, cvParserService_1.buildSearchVector)(data),
                     rawText: rawText || null,
                     createdBy: userId,
+                    businessId: businessId ?? null,
                 },
             });
             await (0, searchService_1.indexCandidate)(candidate);

@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import {
   getAppSettings, updateAppSettings, uploadLogo, uploadFont, uploadFavicon,
-  getRoles, createRole, updateRole, deleteRole, cloneRole, getPermissions,
+  getRoles, createRole, updateRole, deleteRole, cloneRole, toggleRole, getPermissions,
   getColumnDefinitions, upsertColumnDefinition, deleteColumnDefinition, reorderColumns,
   getAuditLogs, getNotifications, markNotificationRead, markAllNotificationsRead,
   uploadCustomFieldFiles,
 } from '../controllers/settingsController';
-import { authenticate, requirePermission, requireSuperAdmin } from '../middleware/authMiddleware';
+import { authenticate, requirePermission, requireSuperAdmin, requireAnyPermission } from '../middleware/authMiddleware';
 import { uploadLogo as uploadLogoMiddleware, uploadFont as uploadFontMiddleware, uploadFavicon as uploadFaviconMiddleware, uploadCustomFiles } from '../middleware/uploadMiddleware';
 
 const router = Router();
@@ -15,18 +15,20 @@ router.use(authenticate);
 
 // App Settings
 router.get('/app', requirePermission('settings', 'view'), getAppSettings);
-router.put('/app', requireSuperAdmin, uploadLogoMiddleware.single('logo'), updateAppSettings);
+router.put('/app', requireAnyPermission('settings:language'), uploadLogoMiddleware.single('logo'), updateAppSettings);
 router.post('/app/logo', requireSuperAdmin, uploadLogoMiddleware.single('logo'), uploadLogo);
 router.post('/app/favicon', requireSuperAdmin, uploadFaviconMiddleware.single('favicon'), uploadFavicon);
 router.post('/app/font', requireSuperAdmin, uploadFontMiddleware.single('font'), uploadFont);
 
-// Roles
-router.get('/roles', requirePermission('settings', 'roles'), getRoles);
-router.post('/roles', requireSuperAdmin, createRole);
-router.put('/roles/:id', requireSuperAdmin, updateRole);
-router.delete('/roles/:id', requireSuperAdmin, deleteRole);
-router.post('/roles/:id/clone', requireSuperAdmin, cloneRole);
-router.get('/permissions', requirePermission('settings', 'roles'), getPermissions);
+// Roles — accept both old (settings:roles) and new (settings:manage_roles) permission keys
+const canManageRoles = requireAnyPermission('settings:roles', 'settings:manage_roles');
+router.get('/roles', canManageRoles, getRoles);
+router.post('/roles', canManageRoles, createRole);
+router.put('/roles/:id', canManageRoles, updateRole);
+router.delete('/roles/:id', canManageRoles, deleteRole);
+router.post('/roles/:id/clone', canManageRoles, cloneRole);
+router.patch('/roles/:id/toggle', canManageRoles, toggleRole);
+router.get('/permissions', canManageRoles, getPermissions);
 
 // Columns (GET is open to all authenticated users; manage requires permission)
 // NOTE: /reorder must be before /:id or Express will match "reorder" as the id param

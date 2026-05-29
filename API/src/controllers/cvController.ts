@@ -309,10 +309,10 @@ export const bulkImportCVs = async (req: Request, res: Response) => {
   });
 
   // Process in background
-  processBulkCVs(files, req.user?.userId, jobId);
+  processBulkCVs(files, req.user?.userId, jobId, req.user?.businessId ?? undefined);
 };
 
-async function processBulkCVs(files: Express.Multer.File[], userId: string | undefined, jobId: string) {
+async function processBulkCVs(files: Express.Multer.File[], userId: string | undefined, jobId: string, businessId?: string) {
   (global as any).bulkImportResults = (global as any).bulkImportResults || {};
   const results: any[] = [];
 
@@ -358,7 +358,8 @@ async function processBulkCVs(files: Express.Multer.File[], userId: string | und
           searchVector: buildSearchVector(data),
           rawText: rawText || null,
           createdBy: userId,
-        },
+          businessId: businessId ?? null,
+        } as any,
       });
 
       await indexCandidate(candidate);

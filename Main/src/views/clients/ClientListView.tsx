@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import CopyButton from '../../components/common/CopyButton';
+import { usePanelResize } from '../../hooks/usePanelResize';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -23,8 +25,9 @@ const QUERY_KEY = ['clients'];
 
 function ClientQuickPanel({ id, onClose }: { id: string; onClose: () => void }) {
   const navigate = useNavigate();
-  const { canAccess } = useAuthStore();
-  const canViewContacts = canAccess('clients:view_contacts');
+  const { panelStyle, dragHandleProps, dragging } = usePanelResize();
+  const { canAccess, user: _panelUser } = useAuthStore();
+  const canViewContacts = canAccess('clients:view_contacts') || canAccess('clients:update') || _panelUser?.role?.name?.toLowerCase() === 'admin';
 
   const { data, isLoading } = useQuery({
     queryKey: ['client', id],
@@ -39,9 +42,12 @@ function ClientQuickPanel({ id, onClose }: { id: string; onClose: () => void }) 
   }, [onClose]);
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full md:w-[40vw] max-w-xl bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-700"
-      style={{ animation: 'slideInPanel 0.22s ease-out' }}>
-      <style>{`@keyframes slideInPanel { from { transform: translateX(100%); opacity:0 } to { transform: translateX(0); opacity:1 } }`}</style>
+    <div className="fixed inset-y-0 right-0 w-full md:w-[40vw] max-w-xl bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-700 !m-0"
+      style={{ animation: 'slideInPanel 0.22s ease-out', ...panelStyle }}>
+      {/* Drag-to-resize handle */}
+      <div {...dragHandleProps} className={`absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-10 flex items-center justify-center group ${dragging ? 'bg-primary-400/40' : 'hover:bg-primary-400/20'}`}>
+        <div className={`w-0.5 h-10 rounded-full transition-colors ${dragging ? 'bg-primary-500' : 'bg-slate-300 dark:bg-slate-600 group-hover:bg-primary-400'}`} />
+      </div>
 
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
         <span className="text-sm font-semibold text-slate-900 dark:text-white">Client Details</span>
@@ -102,9 +108,12 @@ function ClientQuickPanel({ id, onClose }: { id: string; onClose: () => void }) 
             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700/60 space-y-2.5">
               {data.email && (
                 canViewContacts ? (
-                  <a href={`mailto:${data.email}`} className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600 truncate">
-                    <Mail size={13} className="text-slate-400 flex-shrink-0" />{data.email}
-                  </a>
+                  <div className="flex items-center gap-1.5">
+                    <a href={`mailto:${data.email}`} className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600 truncate">
+                      <Mail size={13} className="text-slate-400 flex-shrink-0" />{data.email}
+                    </a>
+                    <CopyButton value={data.email} />
+                  </div>
                 ) : (
                   <div className="flex items-center gap-2.5 text-sm text-slate-400 dark:text-slate-500">
                     <Mail size={13} className="flex-shrink-0" /><span className="tracking-widest">••••••••••••</span>
@@ -113,9 +122,12 @@ function ClientQuickPanel({ id, onClose }: { id: string; onClose: () => void }) 
               )}
               {data.phone && (
                 canViewContacts ? (
-                  <a href={`tel:${data.phone}`} className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600">
-                    <Phone size={13} className="text-slate-400 flex-shrink-0" />{data.phone}
-                  </a>
+                  <div className="flex items-center gap-1.5">
+                    <a href={`tel:${data.phone}`} className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600">
+                      <Phone size={13} className="text-slate-400 flex-shrink-0" />{data.phone}
+                    </a>
+                    <CopyButton value={data.phone} />
+                  </div>
                 ) : (
                   <div className="flex items-center gap-2.5 text-sm text-slate-400 dark:text-slate-500">
                     <Phone size={13} className="flex-shrink-0" /><span className="tracking-widest">••••••••••</span>
@@ -123,9 +135,12 @@ function ClientQuickPanel({ id, onClose }: { id: string; onClose: () => void }) 
                 )
               )}
               {data.website && (
-                <a href={data.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600 truncate">
-                  <Globe size={13} className="text-slate-400 flex-shrink-0" />{data.website}
-                </a>
+                <div className="flex items-center gap-1.5">
+                  <a href={data.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600 truncate">
+                    <Globe size={13} className="text-slate-400 flex-shrink-0" />{data.website}
+                  </a>
+                  <CopyButton value={data.website} />
+                </div>
               )}
               {(data.city || data.state || data.country) && (
                 <div className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300">
@@ -165,7 +180,7 @@ export default function ClientListView() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { canAccess, user: currentUser } = useAuthStore();
-  const canViewContacts = canAccess('clients:view_contacts');
+  const canViewContacts = canAccess('clients:view_contacts') || canAccess('clients:update') || currentUser?.role?.name?.toLowerCase() === 'admin';
   const isSuperAdmin = !!currentUser?.isSuperAdmin;
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -263,7 +278,7 @@ export default function ClientListView() {
           <div className="flex items-center gap-1 text-xs text-slate-400 mt-0.5">
             <Mail size={10} />
             {canViewContacts
-              ? <span className="truncate max-w-28">{row.email}</span>
+              ? <><span className="truncate max-w-28">{row.email}</span>{row.email && <CopyButton value={row.email} />}</>
               : <span className="tracking-widest">••••••••••</span>
             }
           </div>
@@ -277,7 +292,9 @@ export default function ClientListView() {
       render: (row: Client) => (
         <div className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-300">
           <Phone size={11} className="text-slate-400 flex-shrink-0" />
-          {canViewContacts ? (row.phone || '—') : <span className="tracking-widest">••••••••</span>}
+          {canViewContacts
+            ? <>{row.phone || '—'}{row.phone && <CopyButton value={row.phone} />}</>
+            : <span className="tracking-widest">••••••••</span>}
         </div>
       ),
     },

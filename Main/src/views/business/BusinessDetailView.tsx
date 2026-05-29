@@ -8,6 +8,7 @@ import {
 import { businessService } from '../../services/businessService';
 import ResetPasswordModal from '../../components/employees/ResetPasswordModal';
 import { formatDate, cn } from '../../utils/helpers';
+import CopyButton from '../../components/common/CopyButton';
 
 interface BusinessUser {
   id: string;
@@ -95,7 +96,7 @@ export default function BusinessDetailView() {
             <p className="font-mono text-xs text-slate-500 dark:text-slate-400 mt-1">{data.code}</p>
             <div className="flex items-center gap-5 mt-3 flex-wrap text-sm text-slate-600 dark:text-slate-300">
               {data.adminEmail && (
-                <span className="flex items-center gap-1.5"><Mail size={13} className="text-slate-400" />{data.adminEmail}</span>
+                <span className="flex items-center gap-1.5"><Mail size={13} className="text-slate-400" />{data.adminEmail}<CopyButton value={data.adminEmail} /></span>
               )}
               <span className="flex items-center gap-1.5"><Calendar size={13} className="text-slate-400" />Created {formatDate(data.createdAt)}</span>
             </div>
@@ -187,7 +188,9 @@ export default function BusinessDetailView() {
                     {data.users.map((u) => (
                       <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/20">
                         <td className="px-3 py-2.5 font-medium text-slate-900 dark:text-white">{u.firstName} {u.lastName}</td>
-                        <td className="px-3 py-2.5 text-slate-600 dark:text-slate-400 text-xs">{u.email}</td>
+                        <td className="px-3 py-2.5 text-slate-600 dark:text-slate-400 text-xs">
+                          <span className="flex items-center gap-1">{u.email}{u.email && <CopyButton value={u.email} />}</span>
+                        </td>
                         <td className="px-3 py-2.5">
                           <span className="badge bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs capitalize">
                             {u.role?.name?.replace(/_/g, ' ') || '—'}

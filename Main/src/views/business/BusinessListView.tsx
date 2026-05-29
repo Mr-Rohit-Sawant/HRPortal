@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import CopyButton from '../../components/common/CopyButton';
+import { usePanelResize } from '../../hooks/usePanelResize';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -47,6 +49,7 @@ const EMPTY: CreateForm = { name: '', adminEmail: '', adminPassword: '', adminFi
 
 function BusinessQuickPanel({ id, onClose, onEdit, onDelete }: { id: string; onClose: () => void; onEdit: () => void; onDelete: () => void }) {
   const navigate = useNavigate();
+  const { panelStyle, dragHandleProps, dragging } = usePanelResize();
   const [resetPwOpen, setResetPwOpen] = useState(false);
 
   const { data, isLoading } = useQuery({
@@ -62,9 +65,11 @@ function BusinessQuickPanel({ id, onClose, onEdit, onDelete }: { id: string; onC
   }, [onClose]);
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full md:w-[40vw] max-w-xl bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-700"
-      style={{ animation: 'slideInPanel 0.22s ease-out' }}>
-      <style>{`@keyframes slideInPanel { from { transform: translateX(100%); opacity:0 } to { transform: translateX(0); opacity:1 } }`}</style>
+    <div className="fixed inset-y-0 right-0 w-full md:w-[40vw] max-w-xl bg-white dark:bg-slate-900 shadow-2xl z-50 flex flex-col border-l border-slate-200 dark:border-slate-700 !m-0"
+      style={{ animation: 'slideInPanel 0.22s ease-out', ...panelStyle }}>
+      <div {...dragHandleProps} className={`absolute left-0 top-0 bottom-0 w-1.5 cursor-col-resize z-10 flex items-center justify-center group ${dragging ? 'bg-primary-400/40' : 'hover:bg-primary-400/20'}`}>
+        <div className={`w-0.5 h-10 rounded-full transition-colors ${dragging ? 'bg-primary-500' : 'bg-slate-300 dark:bg-slate-600 group-hover:bg-primary-400'}`} />
+      </div>
 
       <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 dark:border-slate-700 flex-shrink-0">
         <span className="text-sm font-semibold text-slate-900 dark:text-white">Business Details</span>
@@ -105,9 +110,12 @@ function BusinessQuickPanel({ id, onClose, onEdit, onDelete }: { id: string; onC
 
             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-700/60 space-y-2.5">
               {data.adminEmail && (
-                <a href={`mailto:${data.adminEmail}`} className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600 truncate">
-                  <Mail size={13} className="text-slate-400 flex-shrink-0" />{data.adminEmail}
-                </a>
+                <div className="flex items-center gap-1.5">
+                  <a href={`mailto:${data.adminEmail}`} className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-primary-600 truncate">
+                    <Mail size={13} className="text-slate-400 flex-shrink-0" />{data.adminEmail}
+                  </a>
+                  <CopyButton value={data.adminEmail} />
+                </div>
               )}
               <div className="flex items-center gap-2.5 text-sm text-slate-600 dark:text-slate-300">
                 <Calendar size={13} className="text-slate-400 flex-shrink-0" />Created {formatDate(data.createdAt)}

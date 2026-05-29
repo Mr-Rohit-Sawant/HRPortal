@@ -60,7 +60,7 @@ export default function Sidebar({ isOpen, collapsed, onClose, mobileHidden = fal
         { labelKey: 'settings.roles',     path: '/settings/roles',     icon: <Shield size={15} />,        permission: 'settings:roles' },
         { labelKey: 'settings.fonts',     path: '/settings/fonts',     icon: <Type size={15} />,          permission: 'settings:fonts' },
         { labelKey: 'settings.auditLogs', path: '/settings/audit',     icon: <ClipboardList size={15} />, permission: 'audit:view' },
-        { labelKey: 'settings.languages', path: '/settings/languages', icon: <Globe size={15} />,         permission: 'settings:view' },
+        { labelKey: 'settings.languages', path: '/settings/languages', icon: <Globe size={15} />,         permission: 'settings:language' },
         ...(isSuperAdmin ? [{ labelKey: 'Bug Reports', path: '/settings/bug-reports', icon: <Bug size={15} />, permission: undefined as string | undefined }] : []),
       ],
     },

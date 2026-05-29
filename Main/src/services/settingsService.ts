@@ -28,6 +28,7 @@ export const settingsService = {
   updateRole: (id: string, data: any) => api.put<ApiResponse<Role>>(`/settings/roles/${id}`, data),
   deleteRole: (id: string) => api.delete<ApiResponse>(`/settings/roles/${id}`),
   cloneRole: (id: string, name?: string) => api.post<ApiResponse<Role>>(`/settings/roles/${id}/clone`, { name }),
+  toggleRole: (id: string) => api.patch<ApiResponse<Role>>(`/settings/roles/${id}/toggle`),
   getPermissions: () => api.get<ApiResponse<Permission[]>>('/settings/permissions'),
 
   // Columns

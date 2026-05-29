@@ -145,6 +145,7 @@ model Business {
   userNotifications UserNotification[]
   bugReports        BugReport[]
   bugStatusLabels   BugStatusLabel[]
+  roles             Role[]
 
   @@index([status])
   @@map("businesses")
@@ -160,9 +161,11 @@ model Role {
   description String?  @db.Text
   isSystem    Boolean  @default(false)
   isActive    Boolean  @default(true)
+  businessId  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  business    Business? @relation(fields: [businessId], references: [id])
   permissions RolePermission[]
   users       User[]
 
@@ -317,12 +320,12 @@ model Candidate {
   searchVector    String?         @db.Text
   rawText         String?         @db.LongText
 
-  businessId      String
+  businessId      String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
   createdBy       String?
 
-  business              Business        @relation(fields: [businessId], references: [id])
+  business              Business?       @relation(fields: [businessId], references: [id])
   jobApplications       JobApplication[]
   interviewSlots        InterviewSlot[]
   postSelectionRecords  PostSelectionRecord[]

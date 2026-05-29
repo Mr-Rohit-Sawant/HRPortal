@@ -9,7 +9,8 @@ import { cn } from '../../utils/helpers';
 import toast from 'react-hot-toast';
 
 export default function LanguageManagementView() {
-  const { user } = useAuthStore();
+  const { user, canAccess } = useAuthStore();
+  const canManageLanguage = !!user?.isSuperAdmin || canAccess('settings:language');
   const { language, setLanguage } = useLanguageStore();
   const queryClient = useQueryClient();
   const [showAddInfo, setShowAddInfo] = useState(false);
@@ -125,11 +126,12 @@ export default function LanguageManagementView() {
                   )}
                   <button
                     onClick={() => toggleLanguage(lang.code)}
-                    disabled={isDefault || updateMutation.isPending}
+                    disabled={isDefault || updateMutation.isPending || !canManageLanguage}
+                    title={!canManageLanguage ? 'You do not have permission to manage languages' : undefined}
                     className={cn(
                       'w-11 h-6 rounded-full transition-colors relative',
                       isEnabled ? 'bg-primary-600' : 'bg-slate-200 dark:bg-slate-600',
-                      (isDefault || updateMutation.isPending) && 'opacity-50 cursor-not-allowed'
+                      (isDefault || updateMutation.isPending || !canManageLanguage) && 'opacity-50 cursor-not-allowed'
                     )}
                   >
                     <div className={cn(

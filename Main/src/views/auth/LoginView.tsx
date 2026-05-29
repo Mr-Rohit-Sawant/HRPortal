@@ -34,11 +34,12 @@ export default function LoginView() {
 
   const loginMutation = useMutation({
     mutationFn: authService.login,
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       const user = res.data.data?.user;
       if (user) {
         setUser(user);
-        queryClient.setQueryData(['me'], user);
+        // Invalidate so getMe re-fetches fresh permissions on next render
+        await queryClient.invalidateQueries({ queryKey: ['me'] });
         toast.success(`Welcome back, ${user.firstName}!`);
         navigate('/dashboard');
       }

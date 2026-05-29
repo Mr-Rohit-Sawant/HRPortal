@@ -3,6 +3,19 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Edit, Mail, Phone, MapPin, Briefcase, Calendar, Building2, CreditCard, User } from 'lucide-react';
 import { employeeService } from '../../services/employeeService';
 import { formatDate, cn } from '../../utils/helpers';
+import CopyButton from '../../components/common/CopyButton';
+
+function InfoRowCopy({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null;
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-xs text-slate-400 dark:text-slate-500">{label}</span>
+      <span className="flex items-center gap-1.5 text-sm text-slate-800 dark:text-slate-200">
+        {value}<CopyButton value={value} />
+      </span>
+    </div>
+  );
+}
 
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
   if (!value && value !== 0) return null;
@@ -66,8 +79,8 @@ export default function EmployeeDetailView() {
             <h2 className="text-xl font-semibold text-slate-900 dark:text-white">{data.firstName} {data.lastName}</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">{data.designation || 'No designation'} {data.department ? `· ${data.department}` : ''}</p>
             <div className="flex flex-wrap gap-4 mt-3">
-              {data.email && <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300"><Mail size={14} />{data.email}</span>}
-              {data.phone && <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300"><Phone size={14} />{data.phone}</span>}
+              {data.email && <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300"><Mail size={14} />{data.email}<CopyButton value={data.email} /></span>}
+              {data.phone && <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300"><Phone size={14} />{data.phone}<CopyButton value={data.phone} /></span>}
               {(data.city || data.country) && <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300"><MapPin size={14} />{[data.city, data.country].filter(Boolean).join(', ')}</span>}
             </div>
           </div>
@@ -101,8 +114,8 @@ export default function EmployeeDetailView() {
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <InfoRow label="Username" value={data.username} />
-            <InfoRow label="Email" value={data.email} />
-            <InfoRow label="Phone" value={data.phone} />
+            <InfoRowCopy label="Email" value={data.email} />
+            <InfoRowCopy label="Phone" value={data.phone} />
             <InfoRow label="Address" value={data.address} />
             <InfoRow label="City" value={data.city} />
             <InfoRow label="State" value={data.state} />

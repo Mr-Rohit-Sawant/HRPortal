@@ -120,6 +120,11 @@
   100% { width: var(--target-width); }
 }
 
+@keyframes slideInPanel {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
 /* ── Date / Time inputs: make entire field area clickable ─────────────────── */
 input[type="date"],
 input[type="datetime-local"],

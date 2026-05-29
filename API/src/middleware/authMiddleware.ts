@@ -82,6 +82,18 @@ export const requirePermission = (module: string, action: string) => {
   };
 };
 
+// Passes if user has ANY of the listed module:action permissions (or is super admin)
+export const requireAnyPermission = (...permissions: string[]) => {
+  return (req: Request, _res: Response, next: NextFunction) => {
+    if (!req.user) return next(new AppError('Authentication required', 401));
+    if (req.user.isSuperAdmin) return next();
+    const userPerms = req.user.permissions ?? [];
+    const has = permissions.some((p) => userPerms.includes(p));
+    if (!has) return next(new AppError('You do not have permission to perform this action', 403));
+    next();
+  };
+};
+
 export const requireSuperAdmin = (req: Request, _res: Response, next: NextFunction) => {
   if (!req.user?.isSuperAdmin) {
     return next(new AppError('Super Admin access required', 403));

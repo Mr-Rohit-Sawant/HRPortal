@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Edit, Mail, Phone, MapPin, Building2, Globe, FileText, Calendar, CreditCard, Briefcase } from 'lucide-react';
 import { clientService } from '../../services/clientService';
 import { formatDate, cn } from '../../utils/helpers';
+import { useAuthStore } from '../../stores/authStore';
+import CopyButton from '../../components/common/CopyButton';
 
 function InfoRow({ label, value }: { label: string; value?: string | number | null }) {
   if (!value && value !== 0) return null;
@@ -14,9 +16,23 @@ function InfoRow({ label, value }: { label: string; value?: string | number | nu
   );
 }
 
+function InfoRowCopy({ label, value }: { label: string; value?: string | null }) {
+  if (!value) return null;
+  return (
+    <div className="flex flex-col gap-0.5">
+      <span className="text-xs text-slate-400 dark:text-slate-500">{label}</span>
+      <span className="flex items-center gap-1.5 text-sm text-slate-800 dark:text-slate-200">
+        {value}<CopyButton value={value} />
+      </span>
+    </div>
+  );
+}
+
 export default function ClientDetailView() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { canAccess, user: currentUser } = useAuthStore();
+  const canViewContacts = canAccess('clients:view_contacts') || canAccess('clients:update') || currentUser?.role?.name?.toLowerCase() === 'admin';
 
   const { data, isLoading } = useQuery({
     queryKey: ['client', id],
@@ -62,10 +78,10 @@ export default function ClientDetailView() {
             <h2 className="text-xl font-semibold text-slate-900 dark:text-white">{data.companyName}</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">{data.industry || 'No industry'} {data.business ? `· ${data.business.name}` : ''}</p>
             <div className="flex flex-wrap gap-4 mt-3">
-              {data.email && <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300"><Mail size={14} />{data.email}</span>}
-              {data.phone && <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300"><Phone size={14} />{data.phone}</span>}
+              {data.email && <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300"><Mail size={14} />{data.email}{canViewContacts && <CopyButton value={data.email} />}</span>}
+              {data.phone && <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300"><Phone size={14} />{data.phone}{canViewContacts && <CopyButton value={data.phone} />}</span>}
               {(data.city || data.country) && <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300"><MapPin size={14} />{[data.city, data.country].filter(Boolean).join(', ')}</span>}
-              {data.website && <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300"><Globe size={14} />{data.website}</span>}
+              {data.website && <span className="flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300"><Globe size={14} />{data.website}<CopyButton value={data.website} /></span>}
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -86,13 +102,17 @@ export default function ClientDetailView() {
           <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2 mb-4">
             <Phone size={15} /> Contact Information
           </h3>
-          <div className="grid grid-cols-2 gap-4">
-            <InfoRow label="Contact Person" value={data.contactPerson} />
-            <InfoRow label="Email" value={data.email} />
-            <InfoRow label="Phone" value={data.phone} />
-            <InfoRow label="Alternate Phone" value={data.alternatePhone} />
-            <InfoRow label="Website" value={data.website} />
-          </div>
+          {canViewContacts ? (
+            <div className="grid grid-cols-2 gap-4">
+              <InfoRow label="Contact Person" value={data.contactPerson} />
+              <InfoRowCopy label="Email" value={data.email} />
+              <InfoRowCopy label="Phone" value={data.phone} />
+              <InfoRowCopy label="Alternate Phone" value={data.alternatePhone} />
+              <InfoRowCopy label="Website" value={data.website} />
+            </div>
+          ) : (
+            <p className="text-sm text-slate-400 dark:text-slate-500 italic">You don't have permission to view contact details.</p>
+          )}
         </div>
 
         {/* Address */}

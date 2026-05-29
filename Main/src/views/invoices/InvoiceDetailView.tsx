@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Download, Send, FileText, Calendar, CreditCard, Building2 } from 'lucide-react';
 import { invoiceService } from '../../services/invoiceService';
 import { formatDate, cn } from '../../utils/helpers';
+import CopyButton from '../../components/common/CopyButton';
 import { InvoiceStatus } from '../../types';
 
 const STATUS_BADGE: Record<InvoiceStatus, string> = {
@@ -72,7 +73,11 @@ export default function InvoiceDetailView() {
               <span className={cn('badge', STATUS_BADGE[data.status] || 'badge-secondary')}>{data.status}</span>
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400">{data.client?.companyName || 'No client'}</p>
-            <p className="text-xs text-slate-400 mt-1">{data.client?.email}</p>
+            {data.client?.email && (
+              <span className="flex items-center gap-1.5 text-xs text-slate-400 mt-1">
+                {data.client.email}<CopyButton value={data.client.email} />
+              </span>
+            )}
           </div>
           <div className="text-right">
             <p className="text-2xl font-bold text-slate-900 dark:text-white">₹{Number(data.totalAmount).toLocaleString('en-IN')}</p>

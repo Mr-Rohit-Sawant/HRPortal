@@ -158,10 +158,12 @@ export default function AddEmployeeView() {
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
-  const roleOptions: SmartSelectOption[] = (rolesData || []).map((r: any) => ({
-    value: r.id,
-    label: r.name.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
-  }));
+  const roleOptions: SmartSelectOption[] = (rolesData || [])
+    .filter((r: any) => isSuperAdmin || r.name !== 'super_admin')
+    .map((r: any) => ({
+      value: r.id,
+      label: r.name.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase()),
+    }));
 
   const allCountries = [...COUNTRIES, ...extraCountries];
   const statesForCountry = [

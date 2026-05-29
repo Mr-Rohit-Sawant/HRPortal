@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.requireAdminOrSuperAdmin = exports.requireSuperAdmin = exports.requirePermission = exports.invalidateAuthToken = exports.authenticate = void 0;
+exports.requireAdminOrSuperAdmin = exports.requireSuperAdmin = exports.requireAnyPermission = exports.requirePermission = exports.invalidateAuthToken = exports.authenticate = void 0;
 const jwt_1 = require("../utils/jwt");
 const errorMiddleware_1 = require("./errorMiddleware");
 const app_1 = require("../app");
@@ -69,6 +69,21 @@ const requirePermission = (module, action) => {
     };
 };
 exports.requirePermission = requirePermission;
+// Passes if user has ANY of the listed module:action permissions (or is super admin)
+const requireAnyPermission = (...permissions) => {
+    return (req, _res, next) => {
+        if (!req.user)
+            return next(new errorMiddleware_1.AppError('Authentication required', 401));
+        if (req.user.isSuperAdmin)
+            return next();
+        const userPerms = req.user.permissions ?? [];
+        const has = permissions.some((p) => userPerms.includes(p));
+        if (!has)
+            return next(new errorMiddleware_1.AppError('You do not have permission to perform this action', 403));
+        next();
+    };
+};
+exports.requireAnyPermission = requireAnyPermission;
 const requireSuperAdmin = (req, _res, next) => {
     if (!req.user?.isSuperAdmin) {
         return next(new errorMiddleware_1.AppError('Super Admin access required', 403));

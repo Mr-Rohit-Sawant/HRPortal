@@ -8,17 +8,19 @@ const router = (0, express_1.Router)();
 router.use(authMiddleware_1.authenticate);
 // App Settings
 router.get('/app', (0, authMiddleware_1.requirePermission)('settings', 'view'), settingsController_1.getAppSettings);
-router.put('/app', authMiddleware_1.requireSuperAdmin, uploadMiddleware_1.uploadLogo.single('logo'), settingsController_1.updateAppSettings);
+router.put('/app', (0, authMiddleware_1.requireAnyPermission)('settings:language'), uploadMiddleware_1.uploadLogo.single('logo'), settingsController_1.updateAppSettings);
 router.post('/app/logo', authMiddleware_1.requireSuperAdmin, uploadMiddleware_1.uploadLogo.single('logo'), settingsController_1.uploadLogo);
 router.post('/app/favicon', authMiddleware_1.requireSuperAdmin, uploadMiddleware_1.uploadFavicon.single('favicon'), settingsController_1.uploadFavicon);
 router.post('/app/font', authMiddleware_1.requireSuperAdmin, uploadMiddleware_1.uploadFont.single('font'), settingsController_1.uploadFont);
-// Roles
-router.get('/roles', (0, authMiddleware_1.requirePermission)('settings', 'roles'), settingsController_1.getRoles);
-router.post('/roles', authMiddleware_1.requireSuperAdmin, settingsController_1.createRole);
-router.put('/roles/:id', authMiddleware_1.requireSuperAdmin, settingsController_1.updateRole);
-router.delete('/roles/:id', authMiddleware_1.requireSuperAdmin, settingsController_1.deleteRole);
-router.post('/roles/:id/clone', authMiddleware_1.requireSuperAdmin, settingsController_1.cloneRole);
-router.get('/permissions', (0, authMiddleware_1.requirePermission)('settings', 'roles'), settingsController_1.getPermissions);
+// Roles — accept both old (settings:roles) and new (settings:manage_roles) permission keys
+const canManageRoles = (0, authMiddleware_1.requireAnyPermission)('settings:roles', 'settings:manage_roles');
+router.get('/roles', canManageRoles, settingsController_1.getRoles);
+router.post('/roles', canManageRoles, settingsController_1.createRole);
+router.put('/roles/:id', canManageRoles, settingsController_1.updateRole);
+router.delete('/roles/:id', canManageRoles, settingsController_1.deleteRole);
+router.post('/roles/:id/clone', canManageRoles, settingsController_1.cloneRole);
+router.patch('/roles/:id/toggle', canManageRoles, settingsController_1.toggleRole);
+router.get('/permissions', canManageRoles, settingsController_1.getPermissions);
 // Columns (GET is open to all authenticated users; manage requires permission)
 // NOTE: /reorder must be before /:id or Express will match "reorder" as the id param
 router.get('/columns', settingsController_1.getColumnDefinitions);
