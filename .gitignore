@@ -61,3 +61,4 @@ phpMyAdmin/*.DS_Store
 # ============================================================
 *.tsbuildinfo
 .npm/
+.claude/settings.json
