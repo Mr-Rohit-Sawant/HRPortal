@@ -49,4 +49,12 @@ export const settingsService = {
   getNotifications: () => api.get<ApiResponse<any[]>>('/settings/notifications'),
   markRead: (id: string) => api.patch<ApiResponse>(`/settings/notifications/${id}/read`),
   markAllRead: () => api.patch<ApiResponse>('/settings/notifications/read-all'),
+
+  // Test Email
+  sendTestEmail: (formData: FormData) =>
+    api.post<ApiResponse<{ message: string }>>('/settings/test-email', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  sendTestWelcomeEmail: (email: string) =>
+    api.post<ApiResponse<{ message: string }>>('/settings/test-welcome-email', { email }),
 };

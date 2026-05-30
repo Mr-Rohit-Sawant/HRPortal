@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
+import nodemailer from 'nodemailer';
+import { buildWelcomeEmailHtml } from '../services/emailService';
 import { prisma } from '../app';
 import { AppError } from '../middleware/errorMiddleware';
 import { paginate, buildPaginationMeta } from '../utils/helpers';
@@ -406,4 +408,50 @@ export const uploadCustomFieldFiles = async (req: Request, res: Response) => {
     mimeType: f.mimetype,
   }));
   res.json({ success: true, data: result });
+};
+
+export const sendTestWelcomeEmail = async (req: Request, res: Response) => {
+  const { email } = req.body;
+  if (!email) throw new AppError('email is required', 400);
+
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  });
+
+  const loginUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/login`;
+  await transporter.sendMail({
+    from: `"${process.env.SMTP_FROM_NAME}" <${process.env.SMTP_FROM_EMAIL}>`,
+    to: email,
+    subject: `Welcome to ${process.env.SMTP_FROM_NAME || 'HR Recruitment System'} — Your Account is Ready`,
+    html: buildWelcomeEmailHtml('John Doe', email, 'Demo@1234', loginUrl),
+  });
+
+  res.json({ success: true, message: 'Welcome email sent successfully' });
+};
+
+export const sendTestEmail = async (req: Request, res: Response) => {
+  const { to, cc, subject, body } = req.body;
+  if (!to || !subject || !body) throw new AppError('to, subject and body are required', 400);
+
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  });
+
+  const file = req.file as Express.Multer.File | undefined;
+  await transporter.sendMail({
+    from: `"${process.env.SMTP_FROM_NAME}" <${process.env.SMTP_FROM_EMAIL}>`,
+    to,
+    cc: cc || undefined,
+    subject,
+    html: body,
+    attachments: file ? [{ filename: file.originalname, content: file.buffer }] : [],
+  });
+
+  res.json({ success: true, message: 'Email sent successfully' });
 };

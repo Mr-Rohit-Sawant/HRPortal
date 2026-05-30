@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Palette, Shield, Type, ClipboardList, Globe, Bug, ChevronRight,
+  Palette, Shield, Type, ClipboardList, Globe, Bug, Mail, ChevronRight,
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { cn, getInitials } from '../../utils/helpers';
@@ -25,6 +25,7 @@ export default function MobileSettingsView() {
     ...(canAccess('audit:view')      ? [{ label: 'Audit Logs',        icon: <ClipboardList size={18} />,path: '/settings/audit' }]        : []),
     ...(canAccess('settings:view')   ? [{ label: 'Languages',         icon: <Globe size={18} />,        path: '/settings/languages' }]    : []),
     ...(isSuperAdmin                 ? [{ label: 'Bug Reports',       icon: <Bug size={18} />,          path: '/settings/bug-reports' }]  : []),
+    ...(isSuperAdmin                 ? [{ label: 'Test Email',        icon: <Mail size={18} />,         path: '/settings/test-email' }]   : []),
   ];
 
   return (

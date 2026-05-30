@@ -31,6 +31,7 @@ import NotificationsView from '../views/notifications/NotificationsView';
 import BusinessListView from '../views/business/BusinessListView';
 import BusinessDetailView from '../views/business/BusinessDetailView';
 import BugReportsView from '../views/settings/BugReportsView';
+import TestEmailView from '../views/settings/TestEmailView';
 import MobileSettingsView from '../views/settings/MobileSettingsView';
 
 // Shows login at "/" when not authenticated, redirects to dashboard when authenticated
@@ -102,6 +103,7 @@ export default function AppRouter() {
         <Route path="/settings/audit" element={<AuditLogsView />} />
         <Route path="/settings/languages" element={<LanguageManagementView />} />
         <Route path="/settings/bug-reports" element={<BugReportsView />} />
+        <Route path="/settings/test-email" element={<TestEmailView />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

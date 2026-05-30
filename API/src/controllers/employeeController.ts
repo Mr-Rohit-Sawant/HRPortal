@@ -71,7 +71,7 @@ export const getEmployeeById = async (req: Request, res: Response) => {
 export const createEmployee = async (req: Request, res: Response) => {
   const {
     email, username, password, firstName, lastName, phone, department, designation,
-    roleId, joiningDate, salary, address, city, state, country, sendWelcome, businessId: bodyBusinessId,
+    roleId, joiningDate, salary, address, city, state, country, sendWelcome, invitationEmail, businessId: bodyBusinessId,
   } = req.body;
 
   // Pre-validate uniqueness with clear errors
@@ -129,8 +129,9 @@ export const createEmployee = async (req: Request, res: Response) => {
   });
 
   if (sendWelcome === 'true') {
+    const emailTarget = (invitationEmail && invitationEmail.trim()) ? invitationEmail.trim() : email;
     await sendWelcomeEmail(
-      email,
+      emailTarget,
       `${firstName} ${lastName}`,
       plainPassword,
       `${process.env.FRONTEND_URL}/login`

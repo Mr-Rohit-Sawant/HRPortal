@@ -33,6 +33,7 @@ const schema = z.object({
   state: z.string().optional(),
   country: z.string().optional(),
   sendWelcome: z.boolean().optional(),
+  invitationEmail: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -74,6 +75,7 @@ export default function AddEmployeeView() {
 
   const selectedCountry = watch('country');
   const selectedState = watch('state');
+  const sendWelcomeChecked = watch('sendWelcome');
 
   useEffect(() => {
     if (existingEmployee) {
@@ -413,11 +415,23 @@ export default function AddEmployeeView() {
             </div>
 
             {!isEdit && (
-              <div className="card p-5">
+              <div className="card p-5 space-y-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input {...register('sendWelcome')} type="checkbox" className="w-4 h-4 rounded" />
-                  <span className="text-sm text-slate-700 dark:text-slate-300">Send welcome email with credentials</span>
+                  <span className="text-sm text-slate-700 dark:text-slate-300">Send invitation email with credentials</span>
                 </label>
+                {sendWelcomeChecked && (
+                  <div>
+                    <label className="form-label">Send Invitation Email To <span className="text-slate-400 font-normal">(optional)</span></label>
+                    <input
+                      type="email"
+                      className="form-input"
+                      placeholder="Leave empty to send to employee's own email"
+                      {...register('invitationEmail')}
+                    />
+                    <p className="mt-1 text-xs text-slate-400">If left empty, credentials will be sent to the employee's email address.</p>
+                  </div>
+                )}
               </div>
             )}
 

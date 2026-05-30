@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   LayoutDashboard, Users, Briefcase, FileText, Building2,
   Receipt, Settings, LogOut, ChevronDown, ChevronRight,
-  Palette, Shield, Type, ClipboardList, X, Globe, Bug,
+  Palette, Shield, Type, ClipboardList, X, Globe, Bug, Mail,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -62,6 +62,7 @@ export default function Sidebar({ isOpen, collapsed, onClose, mobileHidden = fal
         { labelKey: 'settings.auditLogs', path: '/settings/audit',     icon: <ClipboardList size={15} />, permission: 'audit:view' },
         { labelKey: 'settings.languages', path: '/settings/languages', icon: <Globe size={15} />,         permission: 'settings:language' },
         ...(isSuperAdmin ? [{ labelKey: 'Bug Reports', path: '/settings/bug-reports', icon: <Bug size={15} />, permission: undefined as string | undefined }] : []),
+        ...(isSuperAdmin ? [{ labelKey: 'Test Email',  path: '/settings/test-email',  icon: <Mail size={15} />, permission: undefined as string | undefined }] : []),
       ],
     },
   ];

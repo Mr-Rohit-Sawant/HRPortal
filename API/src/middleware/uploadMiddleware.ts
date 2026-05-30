@@ -152,3 +152,8 @@ export const uploadEmployeeFiles = employeeMultiStorage.fields([
   { name: 'profilePhoto', maxCount: 1 },
   { name: 'cvFile', maxCount: 1 },
 ]);
+
+export const uploadEmailAttachment = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});

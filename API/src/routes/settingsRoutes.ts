@@ -4,10 +4,10 @@ import {
   getRoles, createRole, updateRole, deleteRole, cloneRole, toggleRole, getPermissions,
   getColumnDefinitions, upsertColumnDefinition, deleteColumnDefinition, reorderColumns,
   getAuditLogs, getNotifications, markNotificationRead, markAllNotificationsRead,
-  uploadCustomFieldFiles,
+  uploadCustomFieldFiles, sendTestEmail, sendTestWelcomeEmail,
 } from '../controllers/settingsController';
 import { authenticate, requirePermission, requireSuperAdmin, requireAnyPermission } from '../middleware/authMiddleware';
-import { uploadLogo as uploadLogoMiddleware, uploadFont as uploadFontMiddleware, uploadFavicon as uploadFaviconMiddleware, uploadCustomFiles } from '../middleware/uploadMiddleware';
+import { uploadLogo as uploadLogoMiddleware, uploadFont as uploadFontMiddleware, uploadFavicon as uploadFaviconMiddleware, uploadCustomFiles, uploadEmailAttachment } from '../middleware/uploadMiddleware';
 
 const router = Router();
 
@@ -43,6 +43,10 @@ router.get('/audit', requirePermission('audit', 'view'), getAuditLogs);
 
 // Custom field file upload
 router.post('/upload-custom-files', uploadCustomFiles.array('files', 20), uploadCustomFieldFiles);
+
+// Test Email (super admin only)
+router.post('/test-email', requireSuperAdmin, uploadEmailAttachment.single('attachment'), sendTestEmail);
+router.post('/test-welcome-email', requireSuperAdmin, sendTestWelcomeEmail);
 
 // Notifications
 router.get('/notifications', getNotifications);
