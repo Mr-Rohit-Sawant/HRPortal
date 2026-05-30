@@ -62,3 +62,6 @@ phpMyAdmin/*.DS_Store
 *.tsbuildinfo
 .npm/
 .claude/settings.json
+
+# Misplaced build dir (Express serves from API/public/, not API/public/dist/)
+API/public/dist/
